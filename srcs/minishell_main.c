@@ -118,6 +118,11 @@ void parse_input(char *line, t_token **token)
 			add_token(line, T_PIPE, 1, token);
 			line += 1;
 		}
+		else if ((*line) == ' ' || (*line) == '\t')
+		{
+			while ((*line) == ' ' || (*line) == '\t')
+				line++;
+		}
 		else if ((*line) != ' ' && (*line) != '\t' && (*line) != '"' && (*line) != '"') // mot qui commence pas par quote
 		{
 			add_token(line, T_MOT, ft_strlen_mot_sans_quote(line));
@@ -135,12 +140,8 @@ void parse_input(char *line, t_token **token)
 		// 	else if (ft_isalpha(line) == 1)
 		// 		parse_builtin(line);
 		// 	line++;
+		//  printf("atest");
 		// }
-		else if ((*line) == ' ' || (*line) == '\t')
-		{
-			while ((*line) == ' ' || (*line) == '\t')
-				line++;
-		}
 	}
 }
 
