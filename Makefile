@@ -1,13 +1,22 @@
-CC = clang
+# ════════════════════════════════════════════════════════════════════════════ #
+#                           CONFIGURATION VARIABLES                            #
+# ════════════════════════════════════════════════════════════════════════════ #
 
+NAME = minishell
+
+CC = cc
 CFLAGS = -Wall -Wextra -Werror  -I$(INC_DIR) -I$(LIBFT_DIR)
+LIBS = -lreadline -lncurses -ltinfo $(LIBFT_DIR)/libft.a 
 
 INC_DIR 	= includes
-LIBFT_DIR 	= $(INC_DIR)/ft_libft
 SRC_DIR 	= srcs
 OBJ_DIR     = objs
 
-NAME = minishell
+LIBFT_DIR 	= $(INC_DIR)/ft_libft
+
+# ════════════════════════════════════════════════════════════════════════════ #
+#                                SOURCE FILES                                  #
+# ════════════════════════════════════════════════════════════════════════════ #
 
 SRCS = $(SRC_DIR)/test_main.c \
 		$(SRC_DIR)/test_fonction.c \
@@ -22,22 +31,43 @@ SRCS = $(SRC_DIR)/test_main.c \
 		$(SRC_DIR)/bi_unset.c \
 		$(SRC_DIR)/bi_free.c \
 
+# ════════════════════════════════════════════════════════════════════════════ #
+#                                OBJECT FILES                                  #
+# ════════════════════════════════════════════════════════════════════════════ #
 
-OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+OBJS = $(addprefix $(OBJ_DIR)/, $(notdir $(SRCS:.c=.o)))
 
-LIBS = -lreadline -lncurses -ltinfo $(LIBFT_DIR)/libft.a 
+# ════════════════════════════════════════════════════════════════════════════ #
+#                                PHONY TARGETS                                 #
+# ════════════════════════════════════════════════════════════════════════════ #
+
+.PHONY: all clean fclean re
+
+# ════════════════════════════════════════════════════════════════════════════ #
+#                                DEFAULT TARGET                                #
+# ════════════════════════════════════════════════════════════════════════════ #
 
 all: $(NAME)
 
-$(NAME) : $(OBJS) $(LIBFT_DIR)/libft.a
-	$(CC) $(CFLAGS) $(OBJS) $(LIBS) -o $(NAME)
-
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+# ════════════════════════════════════════════════════════════════════════════ #
+#                                 BUILD RULES                                  #
+# ════════════════════════════════════════════════════════════════════════════ #
 
 $(LIBFT_DIR)/libft.a:
 	$(MAKE) -C $(LIBFT_DIR)
+
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(NAME): $(OBJS) $(LIBFT_DIR)/libft.a
+	$(CC) $(CFLAGS) $(OBJS) $(LIBS) -o $(NAME)
+
+# ════════════════════════════════════════════════════════════════════════════ #
+#                                CLEANUP RULES                                 #
+# ════════════════════════════════════════════════════════════════════════════ #
 
 clean:
 	$(MAKE) -C $(LIBFT_DIR) clean
@@ -47,6 +77,4 @@ fclean: clean
 	$(MAKE) -C $(LIBFT_DIR) fclean
 	rm -f $(NAME) 
 
-re	:	fclean all
-
-.PHONY: all clean fclean re
+re	: fclean all
