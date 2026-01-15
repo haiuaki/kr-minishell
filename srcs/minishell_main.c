@@ -94,7 +94,7 @@ int	ft_strlen_mot_avec_quote(char *line)
 // verifier s'il y a 2 quotes pareils dans la chaine de caracteres
 // on recupere le type du premier quote 
 // soit return (1); ex) " ", ' ',  " ' "  , soit return (0); ex)  ', ", "', '", "'', '"", "'''', '''"
-int	check_quote_ok(char *line) 
+int	check_quote_debut_ok(char *line) 
 {
 	char	debut_quote; // on recupere le type du premier quote ( " ou ' )
 	int		nbr_dquote;
@@ -129,15 +129,16 @@ int	check_quote_ok(char *line)
 	return (0);
 }
 
-// fonction qui verifie l'espace (ou '\0') apres la 2e quote
-int check_2_quotes_puis_fin(char *line)
+// fonction qui verifie l'espace (ou '\0', reir, pipe) apres la 2e quote
+// au cas ou le premier caractere commence par une quote
+int check_2_quotes_debut_puis_fin(char *line)
 {
 	int		i; // l'index pour parcourir la chaine line
 	char	quote; // pour sauvegarder la premiere quote (qui est le premier caractere de la chaine)
 
 	quote = line[0];
 	i = 1;
-	if (check_quote_ok(line) == 1) // si on a 2 quotes pareilles  ex) "...", '...'
+	if (check_quote_debut_ok(line) == 1) // si on a 2 quotes pareilles  ex) "...", '...'
 	{
 		while (line[i])
 		{
@@ -190,6 +191,120 @@ int	len_mot_sans_quote(char *line)
 	return (i);
 }
 
+// verifier s'il y a 2 quotes identiques dans la chaine de caracteres.
+// (pas le premier caractere, au milieu ou a la fin)
+// ex) echo you"p"i, echo you"pi"
+int	check_quote_milieu_ok(char *line)
+{
+	char	debut_quote; // recuperer la premiere quote dans la chaine de caracteres
+	int		compte_debut_quote; // compter le nombre de debut_quote
+	int		i; // l'index pour parcourir la chaine
+
+	debut_quote = 0;
+	compte_debut_quote = 0;
+	i = 0;
+	while (line[i]) // pour recuperer la premiere quote
+	{
+		if (line[i] == '"' || line[i] == '\'') 
+		{
+			debut_quote = line[i]; // sauvegarder la premiere quote
+			compte_debut_quote++; // compter le nombre de la premiere quote (d'abord 1)
+			break;
+		}
+		i++;
+	}
+	i = 0; // reinitialiser l'index
+	while (line[i]) // verifier si on a 2 quotes identiques (qu'on a eu au debut de la chaine)
+	{
+		if (line[i] == debut_quote) // si on trouve la meme quote (du debut) +1
+			compte_debut_quote++;
+		if (compte_debut_quote == 2) // ex) echo you"pi"ii, echo you"pi"
+			return (1);
+		i++;
+	}
+	return (0); // ex) echo you"pi''
+}
+
+// recuprer le caractere de la premiere quote
+char	caractere_quote_debut(char *line)
+{
+	int		i;
+	char	debut_quote;
+
+	i = 0;
+	debut_quote = 0;
+	while (line[i])
+	{
+		if (line[i] == '"' || line[i] == '\'')
+		{
+			debut_quote = line[i];
+			break ;
+		}
+		i++;
+	}
+	return (debut_quote);
+}
+
+// recuperer l'index de la premiere quote 
+int	index_quote_debut(char *line, char c)
+{
+	int	i;
+
+	i = 0;
+	while (line[i])
+	{
+		if (line[i] == c)
+			break ;
+		i++;
+	}
+	return (i);
+}
+
+// fonction qui verifie l'espace (ou '\0', reir, pipe) apres la 2e quote
+// au cas ou le premier caractere ne commence pas par une quote
+int check_2_quotes_milieu_puis_fin(char *line)
+{
+	int		i;
+	int		compter_quote;
+	char	debut_quote; // pour sauvegarder la premiere quote
+
+	compter_quote = 0;
+	debut_quote = caractere_quote_debut(line);
+	i = index_quote_debut(line, debut_quote);
+	// si on a 2 quotes pareilles au milieu ou a la fin  
+	// ex) echo hi"hi", echo hi'hi' | cat -e
+	if (check_quote_milieu_ok(line) == 1)
+	{
+		compter_quote++;
+		i++;
+		while (line[i])
+		{
+			if (line[i] == debut_quote)
+				compter_quote++;
+			if (compter_quote == 2)
+				break ;
+			i++;
+		}
+		i++; // pour verifier le caractere apres la 2e quote
+		if (line[i] == ' ' || line[i] == '\0'
+			|| line[i] == '>' || line[i] == '<' || line[i] == '|') // si on a l'espace (ou '\0', redir, pipe) apres 2e quote -> 1
+			return (1);   // ex) echo you"pi", echo you'pi' | cat -e
+	}
+	return (0); // quotes puis caractere -> 0  ex) echo you"p"i
+}
+
+int	len_mot_avant_quote(char *line)
+{
+	int		i;
+	int		quote;
+	char	debut_quote;
+
+	i = 0;
+	debut_quote = caractere_quote_debut(line);
+	quote = index_quote_debut(line, debut_quote);
+	while (i < quote)
+}
+
 // compter len du type mot (avec quotes + sans quotes)
 int	len_mot(char *line)
 {
@@ -200,17 +315,20 @@ int	len_mot(char *line)
 	if (line[0] == '"' || line[0] == '\'')
 	{
 		// 1-1.  1) le premier caractere = quote   2) 2 quotes bien fermees   3) fin (' ' ou '\0' ou redir ou pipe) apres la 2e quote
-		if (check_quote(line) == 1 && check_2_quotes_puis_fin(line) == 1) // ex) echo "hihi" coucou,  echo "hihi", echo "hihi"| ~~~
+		if (check_quote_debut_ok(line) == 1 && check_2_quotes_debut_puis_fin(line) == 1) // ex) echo "hihi" coucou,  echo "hihi", echo "hihi"| ~~~
 			len = len_mot_2_quotes_entier(line); // calcule a partir de la 1e quote a la 2e quote  ex) "..."
 		// 1-2.  1) le premier caractere = quote   2) 2 quotes bien fermees   3) un caractere apres la 2e quote
-		else if (check_quote(line) == 1 && check_2_quotes_puis_fin(line) == 0)
+		else if (check_quote_debut_ok(line) == 1 && check_2_quotes_debut_puis_fin(line) == 0)
 			len = len_mot_2_quotes_entier(line) + len_mot_sans_quote(line); // ex) 'you'pi ->  strlen("'you'") + strlen("pi")
 		// 1-3.  1) le premier caractere = quote   2) 2 quotes pas fermees
-		else if (check_quote(line) == 0) // ex) ', ", "', '", "'', '"", "'''', '''", echo "hi, echo 'hi |
+		else if (check_quote_debut_ok(line) == 0) // ex) ', ", "', '", "'', '"", "'''', '''", echo "hi, echo 'hi |
 			len = len_mot_sans_quote(line);
 	}
 	// 2. le cas ou le premier caractere ne commence pas par une quote (mais pas redir, ni pipe non plus)
-	else if (line[0] != '"')
+	else if (line[0] != '"' || line[0] != '\'')
+	{
+
+	}
 }
 
 // On parse tout pour trouver les operations ou les builtins
