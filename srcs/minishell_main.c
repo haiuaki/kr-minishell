@@ -91,13 +91,140 @@ int	ft_strlen_mot_avec_quote(char *line)
 	}
 }
 
+// verifier s'il y a 2 quotes pareils dans la chaine de caracteres
+// on recupere le type du premier quote 
+// soit return (1); ex) " ", ' ',  " ' "  , soit return (0); ex)  ', ", "', '", "'', '"", "'''', '''"
+int	check_quote_ok(char *line) 
+{
+	char	debut_quote; // on recupere le type du premier quote ( " ou ' )
+	int		nbr_dquote;
+	int		nbr_squote;
+	int		i; // l'index pour parcourir la chaine de caracteres
+
+	nbr_dquote = 0;
+	nbr_squote = 0;
+	if (line[0] == '"') // si la chaine de caractere commence par double quote
+	{
+		debut_quote = 'd';
+		nbr_dquote++;
+	}
+	else if (line[0] == '\'') // si la chaine de caractere commence par single quote
+	{
+		debut_quote = 's';
+		nbr_squote++;
+	}
+	i = 1;
+	while (line[i])
+	{
+		if (debut_quote == 'd' && line[i] == '"') // verifier le cas " "
+			nbr_dquote++;
+		else if (debut_quote == 's' && line[i] == '\'') // verifier le cas ' '
+			nbr_squote++;
+		if ((nbr_dquote == 2) || (nbr_squote == 2))
+			break ;
+		i++;
+	}
+	if ((nbr_dquote == 2) || (nbr_squote == 2)) // si " " ou ' ' -> return (1)
+		return (1);
+	return (0);
+}
+
+// fonction qui verifie l'espace (ou '\0') apres la 2e quote
+int check_2_quotes_puis_fin(char *line)
+{
+	int		i; // l'index pour parcourir la chaine line
+	char	quote; // pour sauvegarder la premiere quote (qui est le premier caractere de la chaine)
+
+	quote = line[0];
+	i = 1;
+	if (check_quote_ok(line) == 1) // si on a 2 quotes pareilles  ex) "...", '...'
+	{
+		while (line[i])
+		{
+			if (line[i] == quote) // quand on trouve la 2e quote, on arrete
+				break ;
+			i++;
+		}
+		i++; // pour verifier le caractere apres la 2e quote
+		if (line[i] == ' ' || line[i] == '\0'
+			|| line[i] == '>' || line[i] == '<' || line[i] == '|') // si on a l'espace (ou '\0', redir, pipe) apres 2e quote -> 1
+			return (1);     // ex) echo "hihi"  coucou
+	}
+	return (0); // quotes puis caractere -> 0  ex) echo "hihi"coucou
+}
+
+// compter le nombre de caracteres entre 2 quotes, y compris les 2 quotes  ex) "...", '...' 
+int	len_mot_2_quotes_entier(char *line)
+{
+	char	debut_quote; // recuperer la quote de premier caractere de la chaine
+	int		len;
+
+	debut_quote = line[0];
+	len = 1;
+	while (line[len])
+	{
+		if (line[len] == debut_quote)
+		{
+			len++;
+			break ;
+		}
+		len++;
+	}
+	return (len);
+}
+
+// pour recuperer le nombre de caracteres qui commence pas par une quote  
+// ex) echo  hihi,  echo "you"pi (<- pi), echo "you"pi| (<- pi)
+int	len_mot_sans_quote(char *line)
+{
+	int	i;
+
+	i = 0;
+	while (line[i])
+	{
+		if (line[i] == ' ' || line[i] == '\0'
+			|| line[i] == '>' || line[i] == '<' || line[i] == '|')
+			break ;
+		i++;
+	}
+	return (i);
+}
+
+// compter len du type mot (avec quotes + sans quotes)
+int	len_mot(char *line)
+{
+	int	len;
+
+	len = 0;
+	// 1. le cas ou le premier caractere est une quote  ex) "hihi", "hihi, 'hihi', 'hihi, 'hi"hi, etc
+	if (line[0] == '"' || line[0] == '\'')
+	{
+		// 1-1.  1) le premier caractere = quote   2) 2 quotes bien fermees   3) fin (' ' ou '\0' ou redir ou pipe) apres la 2e quote
+		if (check_quote(line) == 1 && check_2_quotes_puis_fin(line) == 1) // ex) echo "hihi" coucou,  echo "hihi", echo "hihi"| ~~~
+			len = len_mot_2_quotes_entier(line); // calcule a partir de la 1e quote a la 2e quote  ex) "..."
+		// 1-2.  1) le premier caractere = quote   2) 2 quotes bien fermees   3) un caractere apres la 2e quote
+		else if (check_quote(line) == 1 && check_2_quotes_puis_fin(line) == 0)
+			len = len_mot_2_quotes_entier(line) + len_mot_sans_quote(line);
+		// 1-3.  1) le premier caractere = quote   2) 2 quotes pas fermees
+		else if (check_quote(line) == 0) // ex) ', ", "', '", "'', '"", "'''', '''", echo "hi, echo 'hi |
+			len = len_mot_sans_quote(line);
+	}
+	// 2. le cas ou le premier caractere ne commence pas par une quote (mais pas redir, ni pipe non plus)
+	else if (line[0] != '"')
+}
+
 // On parse tout pour trouver les operations ou les builtins
 // chaque noeud serait d'abord divise que par soit mot, soit redir, soit pipe  (cf. t_type token)
 void parse_input(char *line, t_token **token) 
 {
 	while (*line)
 	{
-		if (!ft_strncmp(line, ">>", 2) || !ft_strncmp(line, "<<", 2)) // redirection 
+		if ((*line) == ' ' || (*line) == '\t') // passer l'espace tout au debut
+		{
+			while ((*line) == ' ' || (*line) == '\t')
+				line++;
+		}
+		else if (!ft_strncmp(line, ">>", 2) || !ft_strncmp(line, "<<", 2)) // redirection 
 		{
 			if (!ft_strncmp(line, ">>", 2))
 				add_token(line, T_RD_APPEND, 2, token); // on ajoute dans la liste chainee : >>, type : T_RD_APPEND;
@@ -118,17 +245,12 @@ void parse_input(char *line, t_token **token)
 			add_token(line, T_PIPE, 1, token);
 			line += 1;
 		}
-		else if ((*line) == ' ' || (*line) == '\t')
-		{
-			while ((*line) == ' ' || (*line) == '\t')
-				line++;
-		}
-		else if ((*line) != ' ' && (*line) != '\t' && (*line) != '"' && (*line) != '"') // mot qui commence pas par quote
+		else if ((*line) != ' ' && (*line) != '\t' && (*line) != '"' && (*line) != '\'') // mot qui commence pas par quote
 		{
 			add_token(line, T_MOT, ft_strlen_mot_sans_quote(line));
 			line += ft_strlen_mot_sans_quote(line);
 		}
-		else if ((*line) == '"' || (*line) == '"') // mot qui commence par quote
+		else if ((*line) == '"' || (*line) == '\'') // mot qui commence par quote
 		{
 			add_token(line, T_MOT, ft_strlen_mot_avec_quote(line));
 			line += ft_strlen_mot_avec_quote(line);
