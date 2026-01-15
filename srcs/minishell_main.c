@@ -204,7 +204,7 @@ int	len_mot(char *line)
 			len = len_mot_2_quotes_entier(line); // calcule a partir de la 1e quote a la 2e quote  ex) "..."
 		// 1-2.  1) le premier caractere = quote   2) 2 quotes bien fermees   3) un caractere apres la 2e quote
 		else if (check_quote(line) == 1 && check_2_quotes_puis_fin(line) == 0)
-			len = len_mot_2_quotes_entier(line) + len_mot_sans_quote(line);
+			len = len_mot_2_quotes_entier(line) + len_mot_sans_quote(line); // ex) 'you'pi ->  strlen("'you'") + strlen("pi")
 		// 1-3.  1) le premier caractere = quote   2) 2 quotes pas fermees
 		else if (check_quote(line) == 0) // ex) ', ", "', '", "'', '"", "'''', '''", echo "hi, echo 'hi |
 			len = len_mot_sans_quote(line);
