@@ -1,28 +1,5 @@
 #include "minishell.h"
 
-// // On ajoute le token dans la structure t_token;
-// void add_token(char *line, t_type_token type_token, int len, t_token **token)
-// {
-// 	t_token *new;
-
-// 	new = malloc(sizeof(t_token));
-// 	if (!new)
-// 		return ; // Il faudra return une erreur
-// 	new->str = ft_strndup(line, len);	
-// 	new->type_token = type_token;
-// 	new->type_quote = GENERAL; // on va gerer plus tard ***
-// 	line += len; // demander a ma princesse (pour )
-
-// 	if (!token)
-// 	{
-// 		*token = new;
-// 		return;
-// 	}
-// 	while (token->next)
-// 		token = token->next; // On avance a la fin de la liste chainee
-// 	token->next = new;
-// }
-
 // On ajoute le token dans la structure t_token;
 void add_token(char *line, t_type_token type_token, int len, t_token **token)
 {
@@ -415,6 +392,9 @@ int	len_mot_total(char *line)
 // chaque noeud serait d'abord divise que par soit mot, soit redir, soit pipe  (cf. t_type token)
 void parse_input(char *line, t_token **token) 
 {
+	int	len;
+
+	len = 0;
 	while (*line)
 	{
 		if ((*line) == ' ' || (*line) == '\t') // passer l'espace tout au debut
@@ -443,25 +423,12 @@ void parse_input(char *line, t_token **token)
 			add_token(line, T_PIPE, 1, token);
 			line += 1;
 		}
-		else if ((*line) != ' ' && (*line) != '\t' && (*line) != '"' && (*line) != '\'') // mot qui commence pas par quote
+		else
 		{
-			add_token(line, T_MOT, len_mot_sans_quote(line));
-			line += len_mot_sans_quote(line);
+			len = len_mot_total(line);
+			add_token(line, T_MOT, len, token);
+			line += len;
 		}
-		else if ((*line) == '"' || (*line) == '\'') // mot qui commence par quote
-		{
-			add_token(line, T_MOT, len_mot_avec_quote(line));
-			line += len_mot_avec_quote(line);
-		}
-		// else if (ft_isalpha(*line) == 1 || line == '"' || line == '\'') // builtin est toujours miniscule ***
-		// {
-		// 	if (((line == '"') || (line == '\'')) && ft_isalpha(line++) == 1)
-		// 		parse_builtin(line++);
-		// 	else if (ft_isalpha(line) == 1)
-		// 		parse_builtin(line);
-		// 	line++;
-		//  printf("atest");
-		// }
 	}
 }
 
