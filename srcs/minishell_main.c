@@ -1,5 +1,23 @@
 #include "minishell.h"
 
+// enum을 문자열로 변환하는 함수
+const char	*get_token_type_str(t_type_token type)
+{
+	if (type == T_MOT)
+		return ("T_MOT");
+	else if (type == T_PIPE)
+		return ("T_PIPE");
+	else if (type == T_RD_IN)
+		return ("T_RD_IN");
+	else if (type == T_RD_OUT)
+		return ("T_RD_OUT");
+	else if (type == T_RD_APPEND)
+		return ("T_RD_APPEND");
+	else if (type == T_RD_HEREDOC)
+		return ("T_RD_HEREDOC");
+	return ("inconnu");
+}
+
 // On ajoute le token dans la structure t_token;
 void add_token(char *line, t_type_token type_token, int len, t_token **token)
 {
@@ -27,6 +45,20 @@ void add_token(char *line, t_type_token type_token, int len, t_token **token)
     }
 }
 
+// liste free
+void	free_tokens(t_token **token)
+{
+	t_token	*tmp;
+
+	while (*token)
+	{
+		tmp = *token;
+		*token = (*token)->next;
+		free(tmp->str);
+		free(tmp);
+	}
+}
+
 // // On parse pour les mots pour trouver les builtins, on ajoute dans la structure si on en trouve
 // void parse_builtin(char *line)
 // {
@@ -52,7 +84,8 @@ int	len_mot_sans_quote(char *line)
 	int	i;
 
 	i = 0;
-	while ((*line) != '>' && (*line) != '<' && (*line) != '|'
+	while ((*line) && (*line) != ' ' && (*line) != '\t'
+		&& (*line) != '>' && (*line) != '<' && (*line) != '|'
 		&& (*line) != '"' && (*line) != '\'')
 	{
 		line++;
@@ -147,23 +180,6 @@ int	len_mot_2_quotes_entier(char *line)
 	return (len);
 }
 
-// pour recuperer le nombre de caracteres qui commence pas par une quote  
-// ex) echo  hihi,  echo "you"pi (<- pi), echo "you"pi| (<- pi)
-int	len_mot_sans_quote(char *line)
-{
-	int	i;
-
-	i = 0;
-	while (line[i])
-	{
-		if (line[i] == ' ' || line[i] == '\0'
-			|| line[i] == '>' || line[i] == '<' || line[i] == '|')
-			break ;
-		i++;
-	}
-	return (i);
-}
-
 // verifier s'il y a 2 quotes identiques dans la chaine de caracteres.
 // (pas le premier caractere, au milieu ou a la fin)
 // ex) echo you"p"i, echo you"pi"
@@ -196,6 +212,20 @@ int	check_quote_milieu_ok(char *line)
 		i++;
 	}
 	return (0); // ex) echo you"pi''
+}
+
+int	check_avant_quote_espace(char *line)
+{
+	int		i;
+	char	debut_quote;
+
+	i = 0;
+	debut_quote = ;
+	if (check_quote_milieu_ok(line) == 1)
+	{
+		while ()
+	}
+	return (0);
 }
 
 // recuprer le caractere de la premiere quote
@@ -351,6 +381,7 @@ int	len_mot_total(char *line)
 		else if (check_quote_milieu_ok(line) == 0)
 			len = len_mot_sans_quote(line); // s'il y a qu'une seule quote, on s'en fout, on considere la chaine comme s'il y a pas de quote
 	}
+	return (len);
 }
 
 // On parse tout pour trouver les operations ou les builtins
@@ -404,6 +435,7 @@ int	main(int ac, char **av, char **env)
 	(void)env;
 	char	*line;
 	t_token	*parsing;
+	t_token	*temp;
 	int		i;
 	// t_minis	*mini;
 	// int		j;
@@ -412,21 +444,23 @@ int	main(int ac, char **av, char **env)
 	// if (!mini)
 	// 	return (0);
 	i = 0;
-	parsing = malloc(sizeof(t_token));
-	if (!parsing)
-		return (1);
 	while (1)
 	{
 		line = readline("coucou$ ");
 		if (!line)
 			break ;
-		parse_input(line);
-		while (parsing)
+		parsing = NULL;
+		i = 0;
+		parse_input(line, &parsing);
+		temp = parsing;
+		while (temp)
 		{
-			printf("noeud %d '%s'\n", i, parsing->str);
-			parsing = parsing->next;
+			printf("noeud %d '%s' | type %s\n", i, temp->str, get_token_type_str(temp->type_token));
+			i++;
+			temp = temp->next;
 		}
-		return (0);
+		free_tokens(&parsing);
+		free(line);
 	}
 	return (0);
 }
