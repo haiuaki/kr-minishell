@@ -27,24 +27,24 @@ void add_token(char *line, t_type_token type_token, int len, t_token **token)
     }
 }
 
-// On parse pour les mots pour trouver les builtins, on ajoute dans la structure si on en trouve
-void parse_builtin(char *line)
-{
-	if (!ft_strncmp(line, "echo", 4))
-		add_token(line, T_ECHO, 4);
-	else if (!ft_strncmp(line, "cd", 2))
-		add_token(line, T_CD, 2);
-	else if (!ft_strncmp(line, "pwd", 3))
-		add_token(line, T_PWD, 3);
-	else if (!ft_strncmp(line, "export", 6))
-		add_token(line, T_EXPORT, 6);
-	else if (!ft_strncmp(line, "unset", 5))
-		add_token(line, T_UNSET, 5);
-	else if (!ft_strncmp(line, "env", 3))
-		add_token(line, T_ENV, 3);
-	else if (!ft_strncmp(line, "exit", 4))
-		add_token(line, T_EXIT, 4);
-}
+// // On parse pour les mots pour trouver les builtins, on ajoute dans la structure si on en trouve
+// void parse_builtin(char *line)
+// {
+// 	if (!ft_strncmp(line, "echo", 4))
+// 		add_token(line, T_ECHO, 4);
+// 	else if (!ft_strncmp(line, "cd", 2))
+// 		add_token(line, T_CD, 2);
+// 	else if (!ft_strncmp(line, "pwd", 3))
+// 		add_token(line, T_PWD, 3);
+// 	else if (!ft_strncmp(line, "export", 6))
+// 		add_token(line, T_EXPORT, 6);
+// 	else if (!ft_strncmp(line, "unset", 5))
+// 		add_token(line, T_UNSET, 5);
+// 	else if (!ft_strncmp(line, "env", 3))
+// 		add_token(line, T_ENV, 3);
+// 	else if (!ft_strncmp(line, "exit", 4))
+// 		add_token(line, T_EXIT, 4);
+// }
 
 // compter le nombre de caracteres s'il y a pas de 2 quotes qui fonctionnent
 int	len_mot_sans_quote(char *line)
@@ -60,41 +60,6 @@ int	len_mot_sans_quote(char *line)
 	}
 	return (i);
 }
-// int	len_mot_avec_quote(char *line)
-// {
-// 	int		i;
-// 	int		check_quote;
-// 	char	*temp;
-
-// 	line++;
-// 	temp = line;
-// 	i = 1;
-// 	check_quote = 1;
-// 	while (*line)
-// 	{
-// 		if ((*line) == '"' || (*line) == '\'')
-// 		{
-// 			i++;
-// 			check_quote++;
-// 			break ;
-// 		}
-// 		line++;
-// 		i++;
-// 	}
-// 	if (check_quote == 2)
-// 		return (i);
-// 	else if (check_quote == 1)
-// 	{
-// 		i = 1;
-// 		while ((*temp) != '>' && (*temp) != '<' && (*temp) != '|'
-// 			&& (*temp) != '"' && (*temp) != '\'')
-// 		{
-// 			temp++;
-// 			i++;
-// 		}
-// 		return (i);
-// 	}
-// }
 
 // verifier s'il y a 2 quotes pareils dans la chaine de caracteres
 // on recupere le type du premier quote 
@@ -432,65 +397,36 @@ void parse_input(char *line, t_token **token)
 	}
 }
 
-// void parse_input(char *line, t_token **token)
-// {
-// 	while (*line)
-// 	{
-// 		if (!ft_strncmp(line, ">>", 2))
-// 		{
-// 			add_token(line, T_RD_APPEND, 2, token); // on ajoute dans la liste chainee : >>, type : T_RD_APPEND;
-// 			line += 2;
-// 		}
-// 		else if (!ft_strncmp(line, ">", 1))
-// 		{
-// 			add_token(line, T_RD_OUT, 1, token);
-// 			line += 1;
-// 		}
-// 		else if (!ft_strncmp(line, "<<", 2))
-// 		{
-// 			add_token(line, T_RD_HEREDOC, 2, token);
-// 			line += 2;
-// 		}
-// 		else if (!ft_strncmp(line, "<", 1))
-// 		{
-// 			add_token(line, T_RD_IN, 1, token);
-// 			line += 1;
-// 		}
-// 		else if (!ft_strncmp(line, "|", 1))
-// 		{
-// 			add_token(line, T_PIPE, 1, token);
-// 			line += 1;
-// 		}
-// 		else if (ft_isalpha(line) == 1 || line == '"' || line == "'") // builtin est toujours miniscule ***
-// 		{
-// 			parse_builtin(line);
-// 			line++;
-// 		}
-// 		else
-// 			line++;
-// 	}
-// }
-
 int	main(int ac, char **av, char **env)
 {
 	(void)ac;
 	(void)av;
 	(void)env;
 	char	*line;
-	// t_token	parsing;
-	t_minis	*mini;
+	t_token	*parsing;
+	int		i;
+	// t_minis	*mini;
 	// int		j;
 
-	mini = malloc(sizeof(mini));
-	if (!mini)
-		return (0);
+	// mini = malloc(sizeof(mini));
+	// if (!mini)
+	// 	return (0);
+	i = 0;
+	parsing = malloc(sizeof(t_token));
+	if (!parsing)
+		return (1);
 	while (1)
 	{
 		line = readline("coucou$ ");
 		if (!line)
 			break ;
 		parse_input(line);
-		// if (mini->parse->state == DQUOTES)
+		while (parsing)
+		{
+			printf("noeud %d '%s'\n", i, parsing->str);
+			parsing = parsing->next;
+		}
+		return (0);
 	}
 	return (0);
 }
