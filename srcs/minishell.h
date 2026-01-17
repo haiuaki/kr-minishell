@@ -2,7 +2,7 @@
 # define MINISHELL_H
 
 # include "libft.h"
-# include <curses.h>
+// # include <curses.h>
 # include <dirent.h>
 # include <fcntl.h>
 # include <limits.h>
@@ -15,8 +15,8 @@
 # include <sys/ioctl.h>
 # include <sys/stat.h>
 # include <sys/wait.h>
-# include <term.h>
-# include <termcap.h>
+// # include <term.h>
+// # include <termcap.h>
 # include <termios.h>
 # include <unistd.h>
 
@@ -102,6 +102,7 @@ int		check_2_quotes_debut_puis_fin(char *line); // fonction qui verifie (' ', '\
 
 // quote au milieu
 int		check_quote_milieu_ok(char *line);
+int 	check_avant_quote_espace(char *line); // verifier s'il y a espace avant la quote au milieu
 char	caractere_quote_debut(char *line); // recuprer le caractere de la premiere quote
 int		index_quote_debut(char *line, char c); // recuperer l'index de la premiere quote 
 int		index_quote_fin(char *line, char c); // recuperer l'index de la deuxieme quote 

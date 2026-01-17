@@ -1,6 +1,6 @@
 #include "minishell.h"
 
-// enum을 문자열로 변환하는 함수
+// pour tester (enum -> string)	
 const char	*get_token_type_str(t_type_token type)
 {
 	if (type == T_MOT)
@@ -214,18 +214,60 @@ int	check_quote_milieu_ok(char *line)
 	return (0); // ex) echo you"pi''
 }
 
-int	check_avant_quote_espace(char *line)
-{
-	int		i;
-	char	debut_quote;
+// // verifier s'il y a un espace (ou '\0', redir, pipe) avant la quote au cas ou la quote est au milieu de la chaine
+// // ex) echo you"pi"
+// int	check_avant_quote_espace(char *line)
+// {
+// 	int		i;
+// 	int		pos_quote;
+// 	char	debut_quote;
 
-	i = 0;
-	debut_quote = ;
-	if (check_quote_milieu_ok(line) == 1)
-	{
-		while ()
-	}
-	return (0);
+// 	if (!line || line[0] == '\0')
+// 		return (0);
+// 	i = 0;
+// 	if (caractere_quote_debut(line) == 0)
+// 		return (0); // s'il y a pas de quote, on retourne 0
+// 	debut_quote = caractere_quote_debut(line); // recuperer le type de la premiere quote
+// 	if (index_quote_debut(line, debut_quote) == 0)
+// 		return (0); // si la quote est au debut, on retourne 0
+// 	pos_quote = index_quote_debut(line, debut_quote); // recuperer l'index de la premiere quote
+// 	if (check_quote_milieu_ok(line) == 1)
+// 	{
+// 		while (i < pos_quote)
+// 		{
+// 			if (line[i] == ' '
+// 			|| line[i] == '>' || line[i] == '<' || line[i] == '|')
+// 				return (1); // ex) echo "pi" (<- 2 noeuds)
+// 			i++;
+// 		}
+// 	}
+// 	return (0);
+// }
+
+int check_avant_quote_espace(char *line)
+{
+    int i;
+    int pos_quote;
+
+    if (!line || !*line)
+        return 0;
+    // 첫 번째 quote 문자 찾기
+    i = 0;
+    while (line[i] && line[i] != '"' && line[i] != '\'')
+        i++;
+    if (!line[i])
+        return 0; // quote 없음
+    pos_quote = i;
+    if (pos_quote == 0)
+        return 1; // quote가 맨 앞
+    i = pos_quote - 1;
+    while (i >= 0)
+    {
+        if (line[i] == ' ' || line[i] == '>' || line[i] == '<' || line[i] == '|')
+            return 1;
+        i--;
+    }
+    return 0;
 }
 
 // recuprer le caractere de la premiere quote
@@ -371,14 +413,14 @@ int	len_mot_total(char *line)
 	// 2. le cas ou le premier caractere ne commence pas par une quote (mais pas redir, ni pipe non plus)
 	else if (line[0] != '"' || line[0] != '\'')
 	{	// 2-1.  1) quote au milieu   2) 2 quotes bien fermees   3) fin (' ' ou '\0' ou redir ou pipe) apres la 2e quote
-		if (check_quote_milieu_ok(line) == 1 && check_2_quotes_milieu_puis_fin(line) == 1)
+		if (check_quote_milieu_ok(line) == 1 && check_avant_quote_espace(line) == 1 && check_2_quotes_milieu_puis_fin(line) == 1)
 			len = len_mot_avant_quote(line) + len_mot_2_quotes_entier(line);
 		// 2-2.  1) quote au milieu   2) 2 quotes bien fermees   3) un caractere apres la 2e quote
-		else if (check_quote_milieu_ok(line) == 1 && check_2_quotes_milieu_puis_fin(line) == 0)
+		else if (check_quote_milieu_ok(line) == 1 && check_avant_quote_espace(line) == 1 && check_2_quotes_milieu_puis_fin(line) == 0)
 			len = len_mot_avant_quote(line) + len_mot_2_quotes_entier(line) + len_mot_apres_quote(line);
 		// 2-3.  1) quote au milieu   2) 2 quotes pas fermees
 		// 2-4.  1) pas de quote dans la chaine
-		else if (check_quote_milieu_ok(line) == 0)
+		else if (check_quote_milieu_ok(line) == 0 && check_avant_quote_espace(line) == 1)
 			len = len_mot_sans_quote(line); // s'il y a qu'une seule quote, on s'en fout, on considere la chaine comme s'il y a pas de quote
 	}
 	return (len);
