@@ -35,6 +35,11 @@ typedef enum s_type_token
 	T_RD_OUT,
 	T_RD_APPEND,
 	T_RD_HEREDOC,
+
+	T_FD_IN,
+	T_FD_HEREDOC,
+	T_FD_OUT,
+	T_FD_OUT_APPEND,
 }	t_type_token;
 
 typedef enum s_type_bi

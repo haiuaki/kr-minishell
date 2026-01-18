@@ -15,6 +15,14 @@ const char	*get_token_type_str(t_type_token type)
 		return ("T_RD_APPEND");
 	else if (type == T_RD_HEREDOC)
 		return ("T_RD_HEREDOC");
+	else if (type == T_FD_IN)
+		return ("T_FD_IN");
+	else if (type == T_FD_OUT)
+		return ("T_FD_OUT");
+	else if (type == T_FD_HEREDOC)
+		return ("T_FD_HEREDOC");
+	else if (type == T_FD_OUT_APPEND)
+		return ("T_FD_OUT_APPEND");
 	return ("inconnu");
 }
 
@@ -92,6 +100,31 @@ int	len_mot_sans_quote(char *line)
 		i++;
 	}
 	return (i);
+}
+
+// Verifie les quotes, dès qu’on croise un quote, on cherche sa paire
+// si on arrive a la fin avant = unclose quote
+// a verifier avant de commencer le parsing
+int	ft_check_quotes(char *line)
+{
+	int		i;
+	char	quote;
+
+	i = 0;
+	while (line[i])
+	{
+		if (line[i] == '"')
+		{
+			quote = line[i];
+			i++;
+			while (line[i] && line[i] != quote)
+				i++;
+			if (!line[i]) // on est a la fin sans trouver la quote fermante
+				return (0);
+		}
+		i++;
+	}
+	return (1);
 }
 
 // verifier s'il y a 2 quotes pareils dans la chaine de caracteres
@@ -398,9 +431,9 @@ int	len_mot_total(char *line)
 
 	len = 0;
 	// 1. le cas ou le premier caractere est une quote  ex) "hihi", "hihi, 'hihi', 'hihi, 'hi"hi, etc
-	if (line[0] == '"' || line[0] == '\'')
+	if (line[0] == '"')
 	{
-		// 1-1.  1) le premier caractere = quote   2) 2 quotes bien fermees   3) fin (' ' ou '\0' ou redir ou pipe) apres la 2e quote
+		// 1-1.  1) le premier caractere = quote   2) 2 quotes bien fermees   3) fin (' ' ou '\\0' ou redir ou pipe) apres la 2e quote
 		if (check_quote_debut_ok(line) == 1 && check_2_quotes_debut_puis_fin(line) == 1) // ex) echo "hihi" coucou,  echo "hihi", echo "hihi"| ~~~
 			len = len_mot_2_quotes_entier(line); // calcule a partir de la 1e quote a la 2e quote  ex) "..."
 		// 1-2.  1) le premier caractere = quote   2) 2 quotes bien fermees   3) un caractere apres la 2e quote
@@ -411,18 +444,32 @@ int	len_mot_total(char *line)
 			len = len_mot_sans_quote(line);
 	}
 	// 2. le cas ou le premier caractere ne commence pas par une quote (mais pas redir, ni pipe non plus)
-	else if (line[0] != '"' || line[0] != '\'')
-	{	// 2-1.  1) quote au milieu   2) 2 quotes bien fermees   3) fin (' ' ou '\0' ou redir ou pipe) apres la 2e quote
-		if (check_quote_milieu_ok(line) == 1 && check_avant_quote_espace(line) == 1 && check_2_quotes_milieu_puis_fin(line) == 1)
+	else if (line[0] != '"')
+	{
+		if (check_quote_milieu_ok(line) == 1 && check_avant_quote_espace(line) == 0 && check_2_quotes_milieu_puis_fin(line) == 1)
+		{
+			// printf("test  2-1a\\n");
 			len = len_mot_avant_quote(line) + len_mot_2_quotes_entier(line);
-		// 2-2.  1) quote au milieu   2) 2 quotes bien fermees   3) un caractere apres la 2e quote
-		else if (check_quote_milieu_ok(line) == 1 && check_avant_quote_espace(line) == 1 && check_2_quotes_milieu_puis_fin(line) == 0)
+		}
+
+		else if (check_quote_milieu_ok(line) == 1 && check_avant_quote_espace(line) == 0 &&  check_2_quotes_milieu_puis_fin(line) == 0)
+		{
+			printf("test  2-2\\n");
 			len = len_mot_avant_quote(line) + len_mot_2_quotes_entier(line) + len_mot_apres_quote(line);
-		// 2-3.  1) quote au milieu   2) 2 quotes pas fermees
-		// 2-4.  1) pas de quote dans la chaine
-		else if (check_quote_milieu_ok(line) == 0 && check_avant_quote_espace(line) == 1)
-			len = len_mot_sans_quote(line); // s'il y a qu'une seule quote, on s'en fout, on considere la chaine comme s'il y a pas de quote
+		}
+
+		else if (check_avant_quote_espace(line) == 0 && check_quote_milieu_ok(line) == 0)
+		{
+			printf("test 2-3\\n");
+			len = len_mot_sans_quote(line);
+		}
+		else
+		{
+			printf("test 2-4\\n");
+			len = len_mot_sans_quote(line);
+		}
 	}
+
 	return (len);
 }
 
@@ -469,6 +516,46 @@ void parse_input(char *line, t_token **token)
 		}
 	}
 }
+
+void parse_fd_tokens(t_token **token)
+{
+	t_token	*temp;
+
+	temp = *token;
+	while (temp)
+	{
+		if (temp->type_token == T_RD_IN)
+		{
+			if (temp->next && temp->next->type_token == T_MOT)
+			{
+				temp->next->type_token = T_FD_IN;
+			}
+		}
+		else if (temp->type_token == T_RD_OUT)
+		{
+			if (temp->next && temp->next->type_token == T_MOT)
+			{
+				temp->next->type_token = T_FD_OUT;
+			}
+		}
+		else if (temp->type_token == T_RD_APPEND)
+		{
+			if (temp->next && temp->next->type_token == T_MOT)
+			{
+				temp->next->type_token = T_FD_OUT_APPEND;
+			}
+		}
+		else if (temp->type_token == T_RD_HEREDOC)
+		{
+			if (temp->next && temp->next->type_token == T_MOT)
+			{
+				temp->next->type_token = T_FD_HEREDOC;
+			}
+		}
+		temp = temp->next;
+	}
+}
+
 
 int	main(int ac, char **av, char **env)
 {
