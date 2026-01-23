@@ -75,6 +75,8 @@ typedef struct s_mini
 	struct s_mini	*next;
 }	t_mini;
 
+
+
 // typedef struct s_parse
 // {
 // 	char			*val;
@@ -103,8 +105,8 @@ void	parse_input(char *line, t_token **token); // mettre des token a chaque noeu
 char	**split_input_par_pipe(char *line); // decouper des commandes par pipe
 
 // tester
-const char	*get_token_type_str(t_type_token type);
-char				*get_token_type_state(t_state state);
+const char	*get_token_type_str(t_type_token type); // pour tester (enum -> string)	
+char				*get_token_type_state(t_state state); // pour tester type quote
 
 
 // quote est le premier caractere 
@@ -129,7 +131,16 @@ int		len_mot_apres_quote(char *line); // recuperer len apres la 2e quote
 // pas de quote dans la chaine
 int		len_mot_sans_quote(char *line); // compter le nombre de caracteres s'il y a pas de 2 quotes qui fonctionnent
 
+// free
+void	free_tokens(t_token **token); // liste free
+
 // ====================================================================================================================
+
+// pipe
+
+int		check_pipe_fin(char *line); // verifier s'il y a un pipe a la fin de la chaine ou l'espace seulement apres le dernier pipe
+void 	parse_fd_tokens(t_token **token); // pour la condition de token MOT (redir, fd)
+
 
 
 // void	ft_echo(char *str, int option_n);

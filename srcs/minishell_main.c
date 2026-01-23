@@ -16,7 +16,7 @@ const char	*get_token_type_str(t_type_token type)
 	else if (type == T_RD_HEREDOC)
 		return ("T_RD_HEREDOC");
 	else if (type == T_FD_IN)
-		return ("T_FD_IN");
+		return ("T_FD_IN"); 
 	else if (type == T_FD_OUT)
 		return ("T_FD_OUT");
 	else if (type == T_FD_HEREDOC)
@@ -53,17 +53,6 @@ void add_token(char *line, t_type_token type_token, int len, t_token **token)
     new_node->str = ft_strndup(line, len);    
     new_node->type_token = type_token;
     new_node->type_quote = GENERAL;
-		// if (type_token == T_MOT)
-		// {
-		// 	if (check_quote_debut_ok(line) == 1 || check_quote_milieu_ok(line) == 1)
-		// 	{
-		// 		temp_quote = caractere_quote_debut(line);
-		// 		if (temp_quote == '"')
-		// 			new_node->type_quote = DQUOTES;
-		// 		else if (temp_quote == '\'')
-		// 			new_node->type_quote = SQUOTES;
-		// 	}
-		// }
     new_node->type_bi = 0; // par defaut
     new_node->next = NULL;
 
@@ -536,19 +525,6 @@ char	**split_input_par_pipe(char *line)
     }
     i++;
 	}
-	// while (j < size_cmd)
-	// {
-	// 	while (j < size_cmd && cmd[j][i] != '|')
-	// 		i++;
-	// 	if (cmd[j][i] == '|')
-	// 	{
-	// 		cmd[j] = ft_strndup(cmd[j], i - 1);
-	// 		if (cmd[j])
-	// 			return (NULL);
-	// 		i++;
-	// 	}
-	// 	j++;
-	// }
 	cmd[j] = ft_strndup(line + start, i - start);
 	if (cmd[j])
 	{
@@ -603,7 +579,7 @@ void parse_input(char *line, t_token **token)
 	}
 }
 
-// pour la condition de token
+// pour la condition de token Mot (pour gerer le cas de fd)
 void parse_fd_tokens(t_token **token)
 {
 	t_token	*temp;
@@ -614,12 +590,12 @@ void parse_fd_tokens(t_token **token)
 		if (temp->type_token == T_RD_IN)
 		{
 			if (temp->next && temp->next->type_token == T_MOT)
-				temp->next->type_token = T_FD_IN;
+				temp->next->type_token = T_FD_IN; // la suite de redir concerne le nom de fichier, donc fd
 		}
 		else if (temp->type_token == T_RD_OUT)
 		{
 			if (temp->next && temp->next->type_token == T_MOT)
-				temp->next->type_token = T_FD_OUT;
+				temp->next->type_token = T_FD_OUT; // la suite de redir concerne le nom de fichier, donc fd
 		}
 		else if (temp->type_token == T_RD_APPEND)
 		{
