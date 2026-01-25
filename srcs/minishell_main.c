@@ -526,7 +526,7 @@ char	**split_input_par_pipe(char *line)
     i++;
 	}
 	cmd[j] = ft_strndup(line + start, i - start);
-	if (cmd[j])
+	if (!cmd[j])
 	{
 		// a faire free avant ***
 		return (NULL);
@@ -653,7 +653,7 @@ int	main(int ac, char **av, char **env)
 		}
 		cmd = split_input_par_pipe(line);
 		if (!cmd)
-			return (printf("erreur"), 1);
+			return (printf("erreurwoojeong"), 1);
 		while (cmd[j])
 		{
 			printf("cmd[%d] = [%s]\n", j, cmd[j]);
