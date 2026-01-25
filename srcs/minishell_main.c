@@ -654,7 +654,7 @@ int	main(int ac, char **av, char **env)
 		}
 		cmd = split_input_par_pipe(line);
 		if (!cmd)
-			return (printf("erreurwoojeong"), 1);
+			return (printf("erreur"), 1);
 		while (cmd[j])
 		{
 			printf("cmd[%d] = [%s]\n", j, cmd[j]);
