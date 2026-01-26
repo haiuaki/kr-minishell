@@ -6,7 +6,7 @@
 /*   By: juljin <juljin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/24 15:05:05 by juljin            #+#    #+#             */
-/*   Updated: 2026/01/24 16:07:51 by juljin           ###   ########.fr       */
+/*   Updated: 2026/01/26 17:49:13 by juljin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,17 +15,9 @@
 
 # include "includes.h"
 
-/* ------------------------------- STRUCTURE -------------------------------- */
-
-typedef struct s_sig
-{
-	struct sigaction	sa_int;
-	struct sigaction	sa_quit;
-	sigset_t			set;
-}						t_sig;
-
 /* --------------------------------- UTILS ---------------------------------- */
 
-void	sig_parent_setup(void);
+void	sig_set_parent(void);
+void	sig_set_default(void);
 
 #endif
