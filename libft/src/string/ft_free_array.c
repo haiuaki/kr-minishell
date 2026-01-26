@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_free_split.c                                    :+:      :+:    :+:   */
+/*   ft_free_array.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: juljin <juljin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -12,15 +12,15 @@
 
 #include "str.h"
 
-void	ft_free_split(char **split)
+void	ft_free_array(char **array)
 {
 	size_t	i;
 
 	i = 0;
-	while (split[i])
+	while (array[i])
 	{
-		free(split[i]);
+		free(array[i]);
 		i++;
 	}
-	free(split);
+	free(array);
 }

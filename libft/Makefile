@@ -73,7 +73,7 @@ MEM_SRC		= $(SRCDIR)/memory/ft_bzero.c \
 			  $(SRCDIR)/memory/ft_memset.c
 
 # String functions
-STR_SRC		= $(SRCDIR)/string/ft_free_split.c \
+STR_SRC		= $(SRCDIR)/string/ft_free_array.c \
 			  $(SRCDIR)/string/ft_split.c \
 			  $(SRCDIR)/string/ft_strchr.c \
 			  $(SRCDIR)/string/ft_strdup.c \
