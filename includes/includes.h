@@ -6,7 +6,7 @@
 /*   By: juljin <juljin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 20:12:02 by juljin            #+#    #+#             */
-/*   Updated: 2026/01/23 12:53:18 by juljin           ###   ########.fr       */
+/*   Updated: 2026/01/24 15:42:40 by juljin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,13 +39,13 @@
 									// execve(), dup(), dup2(), pipe(),
 									// isatty(), ttyname() & ttyslot()
 
-/* ----------------------- Terminal control headers ----------------------- */
+/* ------------------------ Terminal control headers ------------------------ */
 
 # include <curses.h>				// For terminal capabilities
 # include <term.h>					// For tgetent(), tgetflag(), tgetnum(),
 									// tgetstr(), tgoto() & tputs()
 
-/* ----------------------- Readline library headers ----------------------- */
+/* ------------------------ Readline library headers ------------------------ */
 
 # include <readline/readline.h>		// For readline(), rl_clear_history(),
 									// rl_on_new_line(), rl_replace_line()

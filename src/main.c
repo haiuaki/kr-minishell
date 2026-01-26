@@ -1,23 +1,31 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   minishell.h                                        :+:      :+:    :+:   */
+/*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: juljin <juljin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/22 20:13:52 by juljin            #+#    #+#             */
-/*   Updated: 2026/01/26 15:15:34 by juljin           ###   ########.fr       */
+/*   Created: 2026/01/23 11:58:50 by juljin            #+#    #+#             */
+/*   Updated: 2026/01/26 15:14:16 by juljin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef MINISHELL_H
-# define MINISHELL_H
+#include "minishell.h"
 
-# include "libft.h"
-# include "includes.h"
-# include "sig.h"
+int	main(int ac, char *av[])
+{
+	char	*input;
 
-# define USAGE		"Usage: ./minishell\n"
-# define PROMPT		"minishell$ "
-
-#endif
+	(void)av;
+	if (ac != 1)
+		return (printf(USAGE), 1);
+	sig_parent_setup();
+	while (1)
+	{
+		input = readline(PROMPT);
+		if (!input)
+			break ;
+		add_history(input);
+	}
+	return (0);
+}
