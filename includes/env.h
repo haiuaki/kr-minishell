@@ -1,37 +1,35 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   minishell.h                                        :+:      :+:    :+:   */
+/*   env.h                                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: juljin <juljin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/22 20:13:52 by juljin            #+#    #+#             */
-/*   Updated: 2026/01/26 17:54:12 by juljin           ###   ########.fr       */
+/*   Created: 2026/01/26 23:20:24 by juljin            #+#    #+#             */
+/*   Updated: 2026/01/26 23:20:25 by juljin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef MINISHELL_H
-# define MINISHELL_H
+#ifndef ENV_H
+# define ENV_H
 
-# include "libft.h"
-# include "env.h"
-# include "sig.h"
-
-/* -------------------------------- MESSAGES -------------------------------- */
-
-# define USAGE		"Usage: ./minishell\n"
-# define PROMPT		"minishell$ "
-
-/* ---------------------------- GLOBAL VARIABLE ----------------------------- */
-
-extern volatile sig_atomic_t	g_signal;
+# include "includes.h"
 
 /* ------------------------------- STRUCTURE -------------------------------- */
 
-typedef struct s_data
+typedef	struct s_env
 {
-	t_env	*env_head;
-}			t_data;
+	char			*key;
+	char			*value;
+	struct s_env	*next;
+}					t_env;
 
+/* --------------------------------- UTILS ---------------------------------- */
+
+t_env	*new_env_node(char *str);
+t_env	*copy_env(char **envp);
+
+void	free_env_node(t_env *node);
+void	free_env_list(t_env *head);
 
 #endif

@@ -33,8 +33,12 @@ LIBFT		= $(LIBFTDIR)/libft.a
 #                                SOURCE FILES                                  #
 # ════════════════════════════════════════════════════════════════════════════ #
 
+ENV			= env/env.c \
+			  env/env_utils.c
+
 SRC			= main.c \
-			  signal.c
+			  signal.c \
+			  $(ENV)
 
 # ════════════════════════════════════════════════════════════════════════════ #
 #                                OBJECT FILES                                  #
