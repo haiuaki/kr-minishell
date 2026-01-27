@@ -12,37 +12,10 @@
 
 #include "minishell.h"
 
-/* Splitting the key and its value & storing it inside a node, ignoring '=' */
-t_env	*new_env_node(char *str)
-{
-	t_env	*node;
-	char	*equal_ptr;
-	size_t	key_len;
-
-	node = malloc(sizeof(t_env));
-	if (!node)
-		return (NULL);
-	node->next = NULL;
-	equal_ptr = ft_strchr(str, '=');
-	if (equal_ptr)
-	{
-		key_len = equal_ptr - str;
-		node->key = ft_substr(str, 0, key_len);
-		node->value = ft_strdup(equal_ptr + 1);
-	}
-	else
-	{
-		node->key = ft_strdup(str);
-		node->value = NULL;
-	}
-	return (node);
-}
-
 /* Copying the *envp[] from the system into a linked list */
 t_env	*copy_env(char **envp)
 {
 	t_env	*head;
-	t_env	*current;
 	t_env	*new_node;
 	size_t	i;
 
@@ -53,16 +26,7 @@ t_env	*copy_env(char **envp)
 		new_node = new_env_node(envp[i]);
 		if (!new_node)
 			return (free_env_list(head), NULL);
-		if (!head)
-		{
-			head = new_node;
-			current = head;
-		}
-		else
-		{
-			current->next = new_node;
-			current = new_node;
-		}
+		env_add_back(&head, new_node);
 		i++;
 	}
 	return (head);
@@ -72,8 +36,9 @@ t_env	*copy_env(char **envp)
 int	main(int ac, char *av[], char *envp[])
 {
 	t_env	*env_copy;
-	size_t	i;
 
+	(void)ac;
+	(void)av;
 	env_copy = copy_env(envp);
 	if (!env_copy)
 		return (1);

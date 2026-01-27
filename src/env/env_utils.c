@@ -3,38 +3,68 @@
 /*                                                        :::      ::::::::   */
 /*   env_utils.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: juljin <juljin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: jlnjin <jlnjin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/27 00:05:30 by juljin            #+#    #+#             */
-/*   Updated: 2026/01/27 00:05:30 by juljin           ###   ########.fr       */
+/*   Created: 2026/01/27 01:00:23 by jlnjin            #+#    #+#             */
+/*   Updated: 2026/01/27 01:00:25 by jlnjin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
-/* Freeing one t_env node */
-void	free_env_node(t_env *node)
+/* Check if ft_substr() and ft_strdup() failed or not for new_env_node() */
+static int	check_env_node(char *equal_ptr, t_env *node)
 {
-	if (!node)
-		return ;
-	if (node->key)
-		free(node->key);
-	if (node->value)
-		free(node->value);
-	free(node);
+	if (!node->key || (equal_ptr && !node->value))
+	{
+		free_env_node(node);
+		return (0);
+	}
+	return (1);
 }
 
-/* Freeing the t_env list */
-void	free_env_list(t_env *head)
+/* Splitting the key and its value & storing it inside a node, ignoring '=' */
+t_env	*new_env_node(char *str)
 {
-	t_env	*tmp;
+	t_env	*node;
+	char	*equal_ptr;
+	size_t	key_len;
 
-	if (!head)
-		return ;
-	while (head)
+	node = malloc(sizeof(t_env));
+	if (!node)
+		return (NULL);
+	node->next = NULL;
+	equal_ptr = ft_strchr(str, '=');
+	if (equal_ptr)
 	{
-		tmp = head->next;
-		free_env_node(head);
-		head = tmp;
+		key_len = equal_ptr - str;
+		node->key = ft_substr(str, 0, key_len);
+		node->value = ft_strdup(equal_ptr + 1);
 	}
+	else
+	{
+		node->key = ft_strdup(str);
+		node->value = NULL;
+	}
+	if (!check_env_node(equal_ptr, node))
+		return (NULL);
+	return (node);
+}
+
+/* Adding the node at the end of the list */
+void	env_add_back(t_env **head, t_env *new_node)
+{
+	t_env	*current;
+
+	if (!head || !new_node)
+		return ;
+	if (!*head)
+	{
+		*head = new_node;
+		return ;
+	}
+	current = *head;
+	while (current->next)
+		current = current->next;
+	current->next = new_node;
 }

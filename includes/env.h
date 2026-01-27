@@ -15,7 +15,7 @@
 
 # include "includes.h"
 
-/* ------------------------------- STRUCTURE -------------------------------- */
+/* -------------------------------- STRUCTURE ------------------------------- */
 
 typedef	struct s_env
 {
@@ -24,10 +24,16 @@ typedef	struct s_env
 	struct s_env	*next;
 }					t_env;
 
+/* ------------------------------- INITIALIZE ------------------------------- */
+
+t_env	*copy_env(char **envp);
+
 /* --------------------------------- UTILS ---------------------------------- */
 
 t_env	*new_env_node(char *str);
-t_env	*copy_env(char **envp);
+void	env_add_back(t_env **head, t_env *new_node);
+
+/* ---------------------------------- FREE ---------------------------------- */
 
 void	free_env_node(t_env *node);
 void	free_env_list(t_env *head);

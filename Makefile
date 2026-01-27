@@ -33,12 +33,15 @@ LIBFT		= $(LIBFTDIR)/libft.a
 #                                SOURCE FILES                                  #
 # ════════════════════════════════════════════════════════════════════════════ #
 
-ENV			= env/env.c \
-			  env/env_utils.c
+CORE		= main.c
 
-SRC			= main.c \
-			  signal.c \
-			  $(ENV)
+ENV			= env/env.c \
+			  env/env_utils.c \
+			  env/env_free.c
+
+SIG			= signal.c
+
+SRC			= $(addprefix $(SRCDIR)/, $(CORE) $(ENV) $(SIG))
 
 # ════════════════════════════════════════════════════════════════════════════ #
 #                                OBJECT FILES                                  #
@@ -69,6 +72,9 @@ $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/%.o: $(SRCDIR)/env/%.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(NAME): $(OBJDIR) $(OBJS) $(LIBFT)

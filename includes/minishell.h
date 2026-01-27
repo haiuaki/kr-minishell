@@ -28,10 +28,10 @@ extern volatile sig_atomic_t	g_signal;
 
 /* ------------------------------- STRUCTURE -------------------------------- */
 
-typedef struct s_data
+typedef struct s_shell
 {
 	t_env	*env_head;
-}			t_data;
+}			t_shell;
 
 
 #endif
