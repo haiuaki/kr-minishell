@@ -6,7 +6,7 @@
 /*   By: juljin <juljin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 20:13:52 by juljin            #+#    #+#             */
-/*   Updated: 2026/01/26 17:54:12 by juljin           ###   ########.fr       */
+/*   Updated: 2026/01/27 14:10:49 by juljin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 # define MINISHELL_H
 
 # include "libft.h"
+# include "built_in.h"
 # include "env.h"
 # include "sig.h"
 

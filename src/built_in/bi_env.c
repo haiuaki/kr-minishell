@@ -1,35 +1,40 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.c                                             :+:      :+:    :+:   */
+/*   bi_env.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: juljin <juljin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/23 11:58:50 by juljin            #+#    #+#             */
-/*   Updated: 2026/01/27 14:08:33 by juljin           ###   ########.fr       */
+/*   Created: 2026/01/27 13:39:41 by juljin            #+#    #+#             */
+/*   Updated: 2026/01/27 14:20:38 by juljin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
-volatile sig_atomic_t	g_signal = 0;
-
-int	main(int ac, char *av[])
+/* Implementation of the built-in command `env` */
+void	bi_env(t_env *env_head)
 {
-	char	*input;
+	t_env	*tmp;
 
-	(void)av;
-	if (ac != 1)
-		return (printf(USAGE), 1);
-	while (1)
+	tmp = env_head;
+	while (tmp)
 	{
-		sig_set_parent();
-		input = readline(PROMPT);
-		if (!input)
-			break ;
-		if (input && *input)
-			add_history(input);
-		free(input);
+		printf("%s%c%s\n", tmp->key, '=', tmp->value);
+		tmp = tmp->next;
 	}
+}
+/*
+int	main(int ac, char *av[], char *envp[])
+{
+	t_env	*env_copy;
+
+	(void)ac;
+	(void)av;
+	env_copy = copy_env(envp);
+	if (!env_copy)
+		return (1);
+	bi_env(env_copy);
 	return (0);
 }
+*/

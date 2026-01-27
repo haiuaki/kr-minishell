@@ -1,35 +1,24 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.c                                             :+:      :+:    :+:   */
+/*   built_in.h                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: juljin <juljin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/23 11:58:50 by juljin            #+#    #+#             */
-/*   Updated: 2026/01/27 14:08:33 by juljin           ###   ########.fr       */
+/*   Created: 2026/01/27 14:09:38 by juljin            #+#    #+#             */
+/*   Updated: 2026/01/27 14:14:40 by juljin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "minishell.h"
+#ifndef BUILT_IN_H
+# define BUILT_IN_H
 
-volatile sig_atomic_t	g_signal = 0;
+# include "includes.h"
+# include "env.h"
 
-int	main(int ac, char *av[])
-{
-	char	*input;
+/* ---------------------------------- ENV ----------------------------------- */
 
-	(void)av;
-	if (ac != 1)
-		return (printf(USAGE), 1);
-	while (1)
-	{
-		sig_set_parent();
-		input = readline(PROMPT);
-		if (!input)
-			break ;
-		if (input && *input)
-			add_history(input);
-		free(input);
-	}
-	return (0);
-}
+void	bi_env(t_env *env_head);
+void	bi_export(t_env *env_head);
+
+#endif
