@@ -6,7 +6,7 @@
 #    By: juljin <juljin@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/22 20:13:40 by juljin            #+#    #+#              #
-#    Updated: 2026/01/27 14:17:20 by juljin           ###   ########.fr        #
+#    Updated: 2026/01/27 17:47:43 by juljin           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -35,8 +35,9 @@ LIBFT		= $(LIBFTDIR)/libft.a
 
 CORE		= main.c
 
-BUILT_IN	= built_in/ft_env.c \
-			  built_in/ft_export.c
+BUILT_IN	= built_in/bi_env.c \
+			  built_in/bi_export.c \
+			  built_in/bi_unset.c
 
 ENV			= env/env.c \
 			  env/env_utils.c \
