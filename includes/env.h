@@ -17,7 +17,7 @@
 
 /* -------------------------------- STRUCTURE ------------------------------- */
 
-typedef	struct s_env
+typedef struct s_env
 {
 	char			*key;
 	char			*value;

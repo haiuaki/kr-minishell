@@ -33,5 +33,4 @@ typedef struct s_shell
 	t_env	*env_head;
 }			t_shell;
 
-
 #endif
