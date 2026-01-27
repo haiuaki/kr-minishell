@@ -30,95 +30,94 @@ OBJDIR		= objs
 # ════════════════════════════════════════════════════════════════════════════ #
 
 # Conversion functions
-CONV_SRC	= $(SRCDIR)/conversion/ft_atoi.c \
-			  $(SRCDIR)/conversion/ft_atol.c \
-			  $(SRCDIR)/conversion/ft_itoa.c \
-			  $(SRCDIR)/conversion/ft_strtoul.c
+CONV_SRC	= conversion/ft_atoi.c \
+			  conversion/ft_atol.c \
+			  conversion/ft_itoa.c \
+			  conversion/ft_strtoul.c
 
 # Character type functions
-CTYPE_SRC	= $(SRCDIR)/ctype/ft_abs.c \
-			  $(SRCDIR)/ctype/ft_isalnum.c \
-			  $(SRCDIR)/ctype/ft_isalpha.c \
-			  $(SRCDIR)/ctype/ft_isascii.c \
-			  $(SRCDIR)/ctype/ft_isdigit.c \
-			  $(SRCDIR)/ctype/ft_isprint.c \
-			  $(SRCDIR)/ctype/ft_isspace.c \
-			  $(SRCDIR)/ctype/ft_tolower.c \
-			  $(SRCDIR)/ctype/ft_toupper.c
+CTYPE_SRC	= ctype/ft_abs.c \
+			  ctype/ft_isalnum.c \
+			  ctype/ft_isalpha.c \
+			  ctype/ft_isascii.c \
+			  ctype/ft_isdigit.c \
+			  ctype/ft_isprint.c \
+			  ctype/ft_isspace.c \
+			  ctype/ft_tolower.c \
+			  ctype/ft_toupper.c
 
 # Input/Output functions
-IO_SRC		= $(SRCDIR)/io/ft_putchar_fd.c \
-			  $(SRCDIR)/io/ft_putendl_fd.c \
-			  $(SRCDIR)/io/ft_putnbr_fd.c \
-			  $(SRCDIR)/io/ft_putstr_fd.c \
+IO_SRC		= io/ft_putchar_fd.c \
+			  io/ft_putendl_fd.c \
+			  io/ft_putnbr_fd.c \
+			  io/ft_putstr_fd.c \
 
 # List functions
-LIST_SRC	= $(SRCDIR)/list/ft_lstadd_back.c \
-			  $(SRCDIR)/list/ft_lstadd_front.c \
-			  $(SRCDIR)/list/ft_lstclear.c \
-			  $(SRCDIR)/list/ft_lstdelone.c \
-			  $(SRCDIR)/list/ft_lstiter.c \
-			  $(SRCDIR)/list/ft_lstlast.c \
-			  $(SRCDIR)/list/ft_lstmap.c \
-			  $(SRCDIR)/list/ft_lstnew.c \
-			  $(SRCDIR)/list/ft_lstsize.c
+LIST_SRC	= list/ft_lstadd_back.c \
+			  list/ft_lstadd_front.c \
+			  list/ft_lstclear.c \
+			  list/ft_lstdelone.c \
+			  list/ft_lstiter.c \
+			  list/ft_lstlast.c \
+			  list/ft_lstmap.c \
+			  list/ft_lstnew.c \
+			  list/ft_lstsize.c
 
 # Memory functions
-MEM_SRC		= $(SRCDIR)/memory/ft_bzero.c \
-			  $(SRCDIR)/memory/ft_calloc.c \
-			  $(SRCDIR)/memory/ft_memchr.c \
-			  $(SRCDIR)/memory/ft_memcmp.c \
-			  $(SRCDIR)/memory/ft_memcpy.c \
-			  $(SRCDIR)/memory/ft_memmove.c \
-			  $(SRCDIR)/memory/ft_memset.c
+MEM_SRC		= memory/ft_bzero.c \
+			  memory/ft_calloc.c \
+			  memory/ft_memchr.c \
+			  memory/ft_memcmp.c \
+			  memory/ft_memcpy.c \
+			  memory/ft_memmove.c \
+			  memory/ft_memset.c
 
 # String functions
-STR_SRC		= $(SRCDIR)/string/ft_free_array.c \
-			  $(SRCDIR)/string/ft_split.c \
-			  $(SRCDIR)/string/ft_strchr.c \
-			  $(SRCDIR)/string/ft_strdup.c \
-			  $(SRCDIR)/string/ft_striteri.c \
-			  $(SRCDIR)/string/ft_strjoin.c \
-			  $(SRCDIR)/string/ft_strlcat.c \
-			  $(SRCDIR)/string/ft_strlcpy.c \
-			  $(SRCDIR)/string/ft_strlen.c \
-			  $(SRCDIR)/string/ft_strmapi.c \
-			  $(SRCDIR)/string/ft_strncmp.c \
-			  $(SRCDIR)/string/ft_strnstr.c \
-			  $(SRCDIR)/string/ft_strrchr.c \
-			  $(SRCDIR)/string/ft_strtrim.c \
-			  $(SRCDIR)/string/ft_substr.c
+STR_SRC		= string/ft_free_array.c \
+			  string/ft_split.c \
+			  string/ft_strchr.c \
+			  string/ft_strdup.c \
+			  string/ft_striteri.c \
+			  string/ft_strjoin.c \
+			  string/ft_strlcat.c \
+			  string/ft_strlcpy.c \
+			  string/ft_strlen.c \
+			  string/ft_strmapi.c \
+			  string/ft_strncmp.c \
+			  string/ft_strnstr.c \
+			  string/ft_strrchr.c \
+			  string/ft_strtrim.c \
+			  string/ft_substr.c
 
 # Printf functions
-PRINTF_CORE	= $(SRCDIR)/ft_printf/core/dispatcher.c \
-			  $(SRCDIR)/ft_printf/core/ft_printf.c \
-			  $(SRCDIR)/ft_printf/core/utils.c
+PRINTF_CORE	= ft_printf/core/dispatcher.c \
+			  ft_printf/core/ft_printf.c \
+			  ft_printf/core/utils.c
 
-PRINTF_PARSE = $(SRCDIR)/ft_printf/parsing/parse.c \
-			   $(SRCDIR)/ft_printf/parsing/parse_utils.c
+PRINTF_PARSE = ft_printf/parsing/parse.c \
+			   ft_printf/parsing/parse_utils.c
 
-PRINTF_PRINT = $(SRCDIR)/ft_printf/printers/print_char.c \
-			   $(SRCDIR)/ft_printf/printers/print_hex.c \
-			   $(SRCDIR)/ft_printf/printers/print_hex_utils.c \
-			   $(SRCDIR)/ft_printf/printers/print_nbr.c \
-			   $(SRCDIR)/ft_printf/printers/print_nbr_utils.c \
-			   $(SRCDIR)/ft_printf/printers/print_nbr_utils2.c \
-			   $(SRCDIR)/ft_printf/printers/print_str.c \
-			   $(SRCDIR)/ft_printf/printers/print_unsign.c \
-			   $(SRCDIR)/ft_printf/printers/print_unsign_utils.c
+PRINTF_PRINT = ft_printf/printers/print_char.c \
+			   ft_printf/printers/print_hex.c \
+			   ft_printf/printers/print_hex_utils.c \
+			   ft_printf/printers/print_nbr.c \
+			   ft_printf/printers/print_nbr_utils.c \
+			   ft_printf/printers/print_nbr_utils2.c \
+			   ft_printf/printers/print_str.c \
+			   ft_printf/printers/print_unsign.c \
+			   ft_printf/printers/print_unsign_utils.c
 
 FT_PRINTF	= $(PRINTF_CORE) $(PRINTF_PARSE) $(PRINTF_PRINT)
 
 # Get Next Line functions
-GNL			= $(SRCDIR)/get_next_line/get_next_line.c \
-			  $(SRCDIR)/get_next_line/get_next_line_utils.c
-
+GNL			= get_next_line/get_next_line.c \
+			  get_next_line/get_next_line_utils.c
 # ════════════════════════════════════════════════════════════════════════════ #
 #                           OBJECT FILES                                       #
 # ════════════════════════════════════════════════════════════════════════════ #
 
-SRC			= $(CONV_SRC) $(CTYPE_SRC) $(IO_SRC) $(LIST_SRC) \
-			  $(MEM_SRC) $(STR_SRC) $(FT_PRINTF) $(GNL)
+SRC			= $(addprefix $(SRCDIR)/, $(CONV_SRC) $(CTYPE_SRC) $(IO_SRC) $(LIST_SRC) \
+			  $(MEM_SRC) $(STR_SRC) $(FT_PRINTF) $(GNL))
 
 OBJS		= $(addprefix $(OBJDIR)/, $(notdir $(SRC:.c=.o)))
 
