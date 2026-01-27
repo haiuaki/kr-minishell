@@ -55,7 +55,6 @@ typedef enum s_type_bi
 
 typedef struct s_token
 {
-
 	char			*str; // token = <<
 	t_type_token	type_token; //= T_RD_HEREDOC
 	t_type_bi		type_bi; // type builtin
@@ -142,10 +141,10 @@ int		check_pipe_fin(char *line); // verifier s'il y a un pipe a la fin de la cha
 void 	parse_fd_tokens(t_token **token); // pour la condition de token MOT (redir, fd)
 
 // quote
-int		appliquer_quote(t_token *token, char **env);
-int		len_doller_espace(t_token *token, char c); // compter le nombre de caracteres (a partir de $ jusqu'a l'espace)
 char	*get_env_var(char *str, char **env); // recuperer $ env variable
-
+char	*ajouter_char(char *resultat, char c); // ajouter un char c a la fin de la chaine resultat  
+char	*appliquer_env_var(char *resultat, char *str, t_token *token, int *i); // appliquer la variable d'env dans str a la position i (qui est le $)
+char	*remplacer_dollar(char *str, t_token *token); // remplacement de $ par la valeur de la variable d'env
 
 // void	ft_echo(char *str, int option_n);
 // void	ft_env(char **env);

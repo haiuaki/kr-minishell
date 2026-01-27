@@ -611,21 +611,47 @@ void parse_fd_tokens(t_token **token)
 	}
 }
 
-// compter le nombre de caracteres (a partir de $ jusqu'a l'espace)
-int	len_doller_espace(char *str) // pour char *str = on donne l'adresse de $ de str / char c est ' '
-{
-	int	i;
+// // compter le nombre de caracteres (a partir de $ jusqu'a l'espace)
+// int	len_doller_espace(char *str) // pour char *str = on donne l'adresse de $ de str / char c est ' '
+// {
+// 	int	i;
 
-	i = 0;
+// 	i = 0;
+// 	if (!str)
+// 		return (0);
+// 	while (str[i])
+// 	{
+// 		if (str[i] == '/' || str[i] == '.' || str[i] == '-' || str[i] == ':' || str[i] == ' ' || str[i] == '}')
+// 			break ;
+// 		i++;
+// 	}
+// 	return (i);
+// }
+
+
+// recuperer le nom de la variable d'env apres $
+// a partir de l'index start (apres $) de str, on va recuperer le nom de la variable d'env
+// ex) $USER -> start = index de U
+char	*get_env_name(char *str, int start)
+{
+	int	i; // index pour parcourir str
+	int	len; // la taille du nom de la variable d'env
+
+	len = 0;
+	i = start; // on va compter la taille a partir de l'index start
 	if (!str)
-		return (0);
-	while (str[i])
+		return (NULL);
+	while (str[i] && (ft_isalnum(str[i]) || str[i] == '_')) 
+	// le nom de variable peut etre soit l'alphabet soit le chiffre soit '_' (dans ce cas on continue pour compter la taille)
 	{
-		if (str[i] == '/' || str[i] == '.' || str[i] == '-' || str[i] == ':' || str[i] == ' ' || str[i] == '}')
-			break ;
 		i++;
+		len++;
 	}
-	return (i);
+	if (len == 0) // s'il y a pas de variable apres $ , on return NULL
+		return (NULL);
+	return (ft_substr(str, start, len));
+	// on retourne le nom de la variable d'env 
+	// qui est a partir de l'index start et de taille len
 }
 
 // recuperer $ env variable
@@ -638,64 +664,152 @@ char	*get_env_var(char *str, char **env)
 	if (!str || !env)
 		return (NULL);
 	len = ft_strlen(str);
-	while ((env)[j])
+	while ((env)[j]) // on va parcourir tout env
 	{
 		if (ft_strncmp((env)[j], str, len) == 0 && env[j][len] == '=')
-			return (env[j] + (len + 1));
+			return (env[j] + (len + 1)); // on retourne le contenu apres le '='
 		j++;
 	}
 	return (NULL);
 }
 
-int	appliquer_quote(t_token *token, char **env)
+// ajouter un char c a la fin de la chaine resultat  
+// ex) resultat = "youp", c = 'i' -> return "youpi"
+char	*ajouter_char(char *resultat, char c)
 {
-	int		i;
-	int		dollar_len;
-	char	quote;
-	char	*temp;
-	char	*env_var;
+	int		len; // la taille de resultat
+	char	*temp; // temporaire pour stocker le nouveau resultat
 
-	i = 0;
-	dollar_len = 0;
-	quote = 0;
-	temp = NULL;
-	env_var = NULL;
-	if (!token || !token->str || !token->str[i])
-		return (-1);
-	while (token->str[i])
-	{
-		if ((token->str[i] == '"' || token->str[i] == '\'') && quote == 0)
-		{
-			quote = token->str[i];
-			i++;
-			continue ;
-		}
-		if (token->str[i] == quote && quote != 0)
-		{
-			quote = 0;
-			i++;
-			continue ;
-		}
-		if (token->str[i] == '$' && quote != '\'')
-		{
-			i++;
-			dollar_len = len_dollar_espace(token->str + i);
-			temp = strndup(token->str + i, (size_t)dollar_len);
-			if (!temp)
-				return (-1);
-			env_var = get_env_var(temp, env);
-			if (env_var != NULL)
-				write(1, env_var, ft_strlen(env_var));
-			i += dollar_len;
-			free(temp);
-			temp = NULL;
-			continue ;
-		}
-		write(1, &token->str[i], 1);
-		i++;
-	}
-	return (0);
+	len = ft_strlen(resultat);
+	temp = malloc(sizeof(char) * (len + 2));// on agrandit de 2 pour le char c et le '\0'
+	if (!temp)
+		return (NULL);
+	ft_strcpy(temp, resultat); // on copie resultat dans temp
+	temp[len] = c; // on rajoute le char c passsé en parametre
+	temp[len + 1] = '\0'; // et on termine avec 0
+	free(resultat); // on libere l'ancien resultat
+	return (temp);
 }
+
+// appliquer la variable d'env dans str a la position i (qui est le $)
+//str = le str entier du token
+//resultat = le nouveau str qui va etre créé
+//i = la position du $ dans str (pour changer le variable d'origine, on utilise son pointeur)
+//token = la structure principale qui contient env et exit status
+// a faire : creer une nouvelle structure all (qui gere env, exit status) *************
+// puis changer t_token *token en t_mini *mini par exemple ****************************
+char	*appliquer_env_var(char *resultat, char *str, t_token *token, int *i)
+{
+	char	*env_name; // le nom de la variable d'env apres $ (ex. USER de $USER)
+	char	*env_var; // la valeur de la variable d'env
+	char	*temp; // temporaire pour stocker le nouveau resultat
+
+	env_name = get_env_name(str, *i + 1); // on recupere le nom de la variable d'env apres $  (cf. *i + 1 <- la position apres $)
+	if (env_name) // si on a un nom de variable d'env
+	{	
+		env_var = get_env_var(env_name, token->env); // on recupere la valeur de la variable d'env
+		if (env_var)
+		{
+			temp = ft_strjoin(resultat, env_var); // on concatene le resultat avec la valeur de la variable d'env
+			if (!temp)
+				return (free(env_name), NULL);
+			free(resultat);
+			resultat = temp; // on met a jour resultat
+		}
+		*i = *i + ft_strlen(env_name) + 1; // on incremente la valeur de i pour sauter la taille du nom de la variable
+		free(env_name); // on libere env_name, puisqu'on l'a deja utilise
+		return (resultat); // on retourne le resultat mis a jour
+	}
+	else // si on n'a pas de nom de variable d'env apres $  (ex. env_name == NULL ,  echo $ )
+		return (ajouter_char(resultat, str[(*i)++]));
+		// (*i) : vu que i est le pointeur de int, pour recuperer la valeur, on fait *i
+		// on applique la valeur str[(*i)] a la fonction ajouter_char
+		// (*i)++ : puis, incrementer de 1 a la valeur (*i)  
+}
+
+
+// remplacement de $ par la valeur de la variable d'env
+// parcours le token str et creer un nouveau str* result qui remplacera str;
+// Si c’est un caractere $, on cherche la variable d’environment et on remplace
+// sinon juste on copie caractere par caractere result est vide au depart et on le construit caractre par caractere
+char	*remplacer_dollar(char *str, t_token *token)
+{
+	int		i; // l'index pour parcourir *str
+	char	*resultat; // le nouveau str qui remplace *str
+	int		entree_s_quote; // pour verifier si on est dans des single quote
+
+	resultat = malloc(sizeof(char) * 1); // on initialise resultat avec 1 caractere (pour resultat[0]='\0')
+	if (!resultat)
+		return (NULL);
+	resultat[0] = '\0'; // resultat est vide au depart
+	i = 0;
+	entree_s_quote = 0;
+	while (str[i])
+	{
+		//si on voit $ (et pas $ a la fin de chaine)
+		// on remplace par la valeur du nom et uniquement si on est pas dans des single quote
+		if (str[i] == '$' && str[i + 1] != '\0' /* && entree_s_quote == 0*/)
+			resultat = appliquer_env_var(resultat, str, token, &i); // on passe l'adresse de i pour le modifier dans la fonction
+		// sinon on copie caractere par caractere str vers resultat
+		else
+			resultat = ajouter_char(resultat, str[i++]);
+		if (!resultat)
+			return (NULL);
+	}
+	return (resultat);
+}
+
+
+
+// int	appliquer_quote(t_token *token, char **env)
+// {
+// 	int		i;
+// 	int		dollar_len;
+// 	char	quote;
+// 	char	*temp;
+// 	char	*env_var;
+
+// 	i = 0;
+// 	dollar_len = 0;
+// 	quote = 0;
+// 	temp = NULL;
+// 	env_var = NULL;
+// 	if (!token || !token->str || !token->str[i])
+// 		return (-1);
+// 	while (token->str[i])
+// 	{
+// 		if ((token->str[i] == '"' || token->str[i] == '\'') && quote == 0)
+// 		{
+// 			quote = token->str[i];
+// 			i++;
+// 			continue ;
+// 		}
+// 		if (token->str[i] == quote && quote != 0)
+// 		{
+// 			quote = 0;
+// 			i++;
+// 			continue ;
+// 		}
+// 		if (token->str[i] == '$' && quote != '\'')
+// 		{
+// 			i++;
+// 			dollar_len = len_dollar_espace(token->str + i);
+// 			temp = strndup(token->str + i, (size_t)dollar_len);
+// 			if (!temp)
+// 				return (-1);
+// 			env_var = get_env_var(temp, env);
+// 			if (env_var != NULL)
+// 				write(1, env_var, ft_strlen(env_var));
+// 			i += dollar_len;
+// 			free(temp);
+// 			temp = NULL;
+// 			continue ;
+// 		}
+// 		write(1, &token->str[i], 1);
+// 		i++;
+// 	}
+// 	return (0);
+// }
 
 int	main(int ac, char **av, char **env)
 {
