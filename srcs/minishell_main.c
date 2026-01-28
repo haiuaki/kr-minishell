@@ -641,6 +641,28 @@ char	*get_env_name(char *str, int start)
 	i = start; // on va compter la taille a partir de l'index start
 	if (!str)
 		return (NULL);
+	if (str[i] == '{') // s'il y a des accolades apres $
+	{
+		i++; // on passe le '{'
+		while (str[i] && str[i] != '}') // on compte jusqu'a trouver '}'
+		{
+			i++;
+			len++;
+		}
+		if (str[i] != '}') // s'il n'y a pas de '}' apres le nom de variable d'env, on return NULL
+			return (NULL); // apres il faut gerer l'erreur *******
+		if (len == 0) // ex) ${} , s'il y a pas de variable entre les accolades, on return NULL
+			return (NULL);
+		i--; // on revient a l'index du dernier caractere entre les accolades (avant '}')
+		while (start < i) // pour verifier si le nom de variable entre {} est valide (alphabetique, chiffre, etc)
+		{
+			if (!ft_isalnum(str[i]) && str[i] != '_') // verifier si chaque caractere entre {} est valide
+				return (NULL);
+			i--;
+		}
+		return (ft_substr(str, start + 1, len)); 
+		// le cas avec les accolades, on emmene a partir de start + 1 (pour passer le '{') et de taille len (avant '}')
+	}
 	while (str[i] && (ft_isalnum(str[i]) || str[i] == '_')) 
 	// le nom de variable peut etre soit l'alphabet soit le chiffre soit '_' (dans ce cas on continue pour compter la taille)
 	{
@@ -705,6 +727,8 @@ char	*appliquer_env_var(char *resultat, char *str, t_token *token, int *i)
 	char	*temp; // temporaire pour stocker le nouveau resultat
 
 	env_name = get_env_name(str, *i + 1); // on recupere le nom de la variable d'env apres $  (cf. *i + 1 <- la position apres $)
+	// apres $, s'il y a un nom alphabetique ou chiffre ou '_', on le recupere
+	// cf) il est possible de nom recupere ne soit pas dans env (ex. $qui_nexiste_pas)
 	if (env_name) // si on a un nom de variable d'env
 	{	
 		env_var = get_env_var(env_name, token->env); // on recupere la valeur de la variable d'env
@@ -720,8 +744,8 @@ char	*appliquer_env_var(char *resultat, char *str, t_token *token, int *i)
 		free(env_name); // on libere env_name, puisqu'on l'a deja utilise
 		return (resultat); // on retourne le resultat mis a jour
 	}
-	else // si on n'a pas de nom de variable d'env apres $  (ex. env_name == NULL ,  echo $ )
-		return (ajouter_char(resultat, str[(*i)++]));
+	else // si on n'a pas de nom de variable d'env apres $  (ex. env_name == NULL ,  echo $)
+		return (ajouter_char(resultat, str[(*i)++])); // on ajoute juste le caractere $ a resultat
 		// (*i) : vu que i est le pointeur de int, pour recuperer la valeur, on fait *i
 		// on applique la valeur str[(*i)] a la fonction ajouter_char
 		// (*i)++ : puis, incrementer de 1 a la valeur (*i)  
