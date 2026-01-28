@@ -65,13 +65,10 @@ typedef struct s_token
 
 typedef struct s_mini
 {
-	char			*cmd;
-	char			*redir;
-	char			*arg;
-	int				arg_index;
-	int				exit_status;
-	// t_parse			parse;
-	struct s_mini	*next;
+	char						**env;
+	int							exit_status;
+	struct s_token	*token;
+	struct s_mini		*next;
 }	t_mini;
 
 
@@ -83,13 +80,13 @@ typedef struct s_mini
 // 	struct s_parse	*next;
 // }	t_parse;
 
-typedef struct minis
-{
-	char	**res;
-	char	*line;
-	char	**env;
-	int		exit_status;
-}	t_minis;
+// typedef struct minis
+// {
+// 	char	**res;
+// 	char	*line;
+// 	char	**env;
+// 	int		exit_status;
+// }	t_minis;
 
 
 // en cours

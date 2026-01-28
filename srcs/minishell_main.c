@@ -658,7 +658,7 @@ char	*get_env_name(char *str, int start)
 		{
 			if (!ft_isalnum(str[i]) && str[i] != '_') // verifier si chaque caractere entre {} est valide
 				return (NULL);
-			i--;
+			i--; // on decremente pour verifier tout jusqu'au debut (apres '{')
 		}
 		return (ft_substr(str, start + 1, len)); 
 		// le cas avec les accolades, on emmene a partir de start + 1 (pour passer le '{') et de taille len (avant '}')
@@ -703,9 +703,9 @@ char	*ajouter_char(char *resultat, char c)
 	char	*temp; // temporaire pour stocker le nouveau resultat
 
 	len = ft_strlen(resultat);
-	temp = malloc(sizeof(char) * (len + 2));// on agrandit de 2 pour le char c et le '\0'
+	temp = malloc(sizeof(char) * (len + 2)); // on agrandit de 2 pour le char c et le '\0'
 	if (!temp)
-		return (NULL);
+		return (free(resultat), NULL);
 	ft_strcpy(temp, resultat); // on copie resultat dans temp
 	temp[len] = c; // on rajoute le char c passsé en parametre
 	temp[len + 1] = '\0'; // et on termine avec 0
@@ -718,8 +718,8 @@ char	*ajouter_char(char *resultat, char c)
 //resultat = le nouveau str qui va etre créé
 //i = la position du $ dans str (pour changer le variable d'origine, on utilise son pointeur)
 //token = la structure principale qui contient env et exit status
-// a faire : creer une nouvelle structure all (qui gere env, exit status) *************
-// puis changer t_token *token en t_mini *mini par exemple ****************************
+// a faire : creer une nouvelle structure all (qui gere env, exit status) *************************************************************************
+// puis changer t_token *token en t_mini *mini par exemple *************************************************************************
 char	*appliquer_env_var(char *resultat, char *str, t_token *token, int *i)
 {
 	char	*env_name; // le nom de la variable d'env apres $ (ex. USER de $USER)
@@ -736,11 +736,15 @@ char	*appliquer_env_var(char *resultat, char *str, t_token *token, int *i)
 		{
 			temp = ft_strjoin(resultat, env_var); // on concatene le resultat avec la valeur de la variable d'env
 			if (!temp)
-				return (free(env_name), NULL);
+				return (free(env_name), free(resultat), NULL);
 			free(resultat);
 			resultat = temp; // on met a jour resultat
 		}
-		*i = *i + ft_strlen(env_name) + 1; // on incremente la valeur de i pour sauter la taille du nom de la variable
+		if (str[(*i) + 1] == '{') // si on a des accolades apres $ (ex. ${USER})
+			*i = *i + ft_strlen(env_name) + 3; // on avance de la taille du nom + 3 (pour $ et les accolades)
+			// cf) 2 pour les accolades + 1 pour $
+		else // sinon (ex. $USER)
+			*i = *i + ft_strlen(env_name) + 1; // +1 pour $
 		free(env_name); // on libere env_name, puisqu'on l'a deja utilise
 		return (resultat); // on retourne le resultat mis a jour
 	}
@@ -782,7 +786,6 @@ char	*remplacer_dollar(char *str, t_token *token)
 	}
 	return (resultat);
 }
-
 
 
 // int	appliquer_quote(t_token *token, char **env)
