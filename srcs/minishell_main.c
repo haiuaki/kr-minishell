@@ -764,28 +764,30 @@ char	*get_env_name(char *str, int start)
 	i = start; // on va compter la taille a partir de l'index start
 	if (!str)
 		return (NULL);
-	if (str[i] == '{') // s'il y a des accolades apres $
-	{
-		i++; // on passe le '{'
-		while (str[i] && str[i] != '}') // on compte jusqu'a trouver '}'
-		{
-			i++;
-			len++;
-		}
-		if (str[i] != '}') // s'il n'y a pas de '}' apres le nom de variable d'env, on return NULL
-			return (NULL); // apres il faut gerer l'erreur *******
-		if (len == 0) // ex) ${} , s'il y a pas de variable entre les accolades, on return NULL
-			return (NULL);
-		i--; // on revient a l'index du dernier caractere entre les accolades (avant '}')
-		while (start < i) // pour verifier si le nom de variable entre {} est valide (alphabetique, chiffre, etc)
-		{
-			if (!ft_isalnum(str[i]) && str[i] != '_') // verifier si chaque caractere entre {} est valide
-				return (NULL);
-			i--; // on decremente pour verifier tout jusqu'au debut (apres '{')
-		}
-		return (ft_substr(str, start + 1, len)); 
-		// le cas avec les accolades, on emmene a partir de start + 1 (pour passer le '{') et de taille len (avant '}')
-	}
+	if (str[i] == '?') // cas special pour $?
+		return (ft_substr(str, start, 1));
+	// if (str[i] == '{') // s'il y a des accolades apres $
+	// {
+	// 	i++; // on passe le '{'
+	// 	while (str[i] && str[i] != '}') // on compte jusqu'a trouver '}'
+	// 	{
+	// 		i++;
+	// 		len++;
+	// 	}
+	// 	if (str[i] != '}') // s'il n'y a pas de '}' apres le nom de variable d'env, on return NULL
+	// 		return (NULL); // apres il faut gerer l'erreur *******
+	// 	if (len == 0) // ex) ${} , s'il y a pas de variable entre les accolades, on return NULL
+	// 		return (NULL);
+	// 	i--; // on revient a l'index du dernier caractere entre les accolades (avant '}')
+	// 	while (start < i) // pour verifier si le nom de variable entre {} est valide (alphabetique, chiffre, etc)
+	// 	{
+	// 		if (!ft_isalnum(str[i]) && str[i] != '_') // verifier si chaque caractere entre {} est valide
+	// 			return (NULL);
+	// 		i--; // on decremente pour verifier tout jusqu'au debut (apres '{')
+	// 	}
+	// 	return (ft_substr(str, start + 1, len)); 
+	// 	// le cas avec les accolades, on emmene a partir de start + 1 (pour passer le '{') et de taille len (avant '}')
+	// }
 	while (str[i] && (ft_isalnum(str[i]) || str[i] == '_')) 
 	// le nom de variable peut etre soit l'alphabet soit le chiffre soit '_' (dans ce cas on continue pour compter la taille)
 	{
@@ -858,20 +860,19 @@ char	*appliquer_env_var(char *resultat, char *str, t_mini *mini, int *i)
 	if (env_name) // si on a un nom de variable d'env
 	{	
 		env_var = get_env_var(env_name, mini); // on recupere la valeur de la variable d'env
-		if (env_var)
-		{
-			temp = ft_strjoin(resultat, env_var); // on concatene le resultat avec la valeur de la variable d'env
-			if (!temp)
-				return (free(env_var), free(env_name), free(resultat), NULL);
-			free(env_var); // on libere env_var, puisqu'on l'a deja utilise
-			free(resultat); // on libere l'ancien resultat
-			resultat = temp; // on met a jour resultat
-		}
-		if (str[(*i) + 1] == '{') // si on a des accolades apres $ (ex. ${USER})
-			*i = *i + ft_strlen(env_name) + 3; // on avance de la taille du nom + 3 (pour $ et les accolades)
+		if (!env_var)
+			return (free(env_name), free(resultat), NULL);
+		temp = ft_strjoin(resultat, env_var); // on concatene le resultat avec la valeur de la variable d'env
+		if (!temp)
+			return (free(env_var), free(env_name), free(resultat), NULL);
+		free(env_var); // on libere env_var, puisqu'on l'a deja utilise
+		free(resultat); // on libere l'ancien resultat
+		resultat = temp; // on met a jour resultat
+		// if (str[(*i) + 1] == '{') // si on a des accolades apres $ (ex. ${USER})
+		// 	- *i = *i + ft_strlen(env_name) + 3; // on avance de la taille du nom + 3 (pour $ et les accolades)
 			// cf) 2 pour les accolades + 1 pour $
-		else // sinon (ex. $USER)
-			*i = *i + ft_strlen(env_name) + 1; // +1 pour $
+		// else // sinon (ex. $USER)
+		*i = *i + ft_strlen(env_name) + 1; // +1 pour $
 		free(env_name); // on libere env_name, puisqu'on l'a deja utilise
 		return (resultat); // on retourne le resultat mis a jour
 	}
