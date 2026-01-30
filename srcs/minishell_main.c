@@ -705,7 +705,7 @@ void test_print_cmds(t_cmd *cmd, int nbr_cmd)
 // chaque noeud serait d'abord divise que par soit mot, soit redir, soit pipe  (cf. t_type token)
 int parse_input(char *line, t_token **token, t_mini *mini) 
 {
-	(void)mini;
+	// (void)mini;
 	int	len;
 
 	len = 0;
@@ -744,8 +744,8 @@ int parse_input(char *line, t_token **token, t_mini *mini)
 			line += len;
 		}
 	}
-	// if (appliquer_dollar_sur_liste_token(token, mini) == -1)
-	// 	return (-1);
+	if (appliquer_dollar_sur_liste_token(token, mini) == -1)
+		return (-1);
 	return (0);
 }
 
@@ -948,23 +948,25 @@ char	*remplacer_dollar(char *str, t_mini *mini)
 // ex) $USER -> username
 int	appliquer_dollar_sur_liste_token(t_token **token, t_mini *mini)
 {
-	char	*new_str; // le nouveau str apres remplacement de $
+	char		*new_str; // le nouveau str apres remplacement de $
+	t_token	*temp;
 
-	if (!(*token) || !mini)
+	if (!token || !(*token) || !mini)
 		return (-1);
-	while ((*token)) // parcourir toute la liste chainee token
+	temp = *token;
+	while (temp) // parcourir toute la liste chainee token
 	{
-		if ((*token)->type_token == T_MOT) // si le type de token est T_MOT
+		if (temp->type_token == T_MOT) // si le type de token est T_MOT
 		{
-			if (!(*token)->str) // si str est NULL, on retourne -1 (erreur)
+			if (!temp->str) // si str est NULL, on retourne -1 (erreur)
 				return (-1);
-			new_str = remplacer_dollar((*token)->str, mini); // remplacer $ par la valeur de la variable d'env
+			new_str = remplacer_dollar(temp->str, mini); // remplacer $ par la valeur de la variable d'env
 			if (!new_str)
 				return (-1);
-			free((*token)->str);
-			(*token)->str = new_str; // on met a jour token->str avec le nouveau str
+			free(temp->str);
+			temp->str = new_str; // on met a jour token->str avec le nouveau str
 		}
-		(*token) = (*token)->next; // passer au noeud suivant
+		temp = temp->next; // passer au noeud suivant
 	}
 	return (0);
 }
