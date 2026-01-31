@@ -655,9 +655,11 @@ void test_print_cmds(t_cmd *cmd, int nbr_cmd)
 int parse_input(char *line, t_token **token, t_mini *mini) 
 {
 	// (void)mini;
-	int	len;
+	int						len;
+	t_type_token	fd_type;
 
 	len = 0;
+	fd_type = (t_type_token) - 1;
 	while (*line)
 	{
 		if ((*line) == ' ' || (*line) == '\t') // passer l'espace tout au debut
@@ -668,31 +670,53 @@ int parse_input(char *line, t_token **token, t_mini *mini)
 		else if (!ft_strncmp(line, ">>", 2) || !ft_strncmp(line, "<<", 2)) // redirection 
 		{
 			if (!ft_strncmp(line, ">>", 2))
+			{
 				add_token(line, T_RD_APPEND, 2, token); // on ajoute dans la liste chainee : >>, type : T_RD_APPEND;
+				fd_type = T_FD_OUT_APPEND;
+			}
 			else if (!ft_strncmp(line, "<<", 2))
+			{
 				add_token(line, T_RD_HEREDOC, 2, token);
+				fd_type = T_FD_HEREDOC;
+			}
 			line += 2;
 		}
 		else if (!ft_strncmp(line, ">", 1) || !ft_strncmp(line, "<", 1))
 		{
 			if (!ft_strncmp(line, ">", 1))
+			{
 				add_token(line, T_RD_OUT, 1, token);
+				fd_type = T_FD_OUT;
+			}
 			else if (!ft_strncmp(line, "<", 1))
+			{
 				add_token(line, T_RD_IN, 1, token);
+				fd_type = T_FD_IN;
+			}
 			line += 1;
 		}
 		else if (!ft_strncmp(line, "|", 1)) // pipe  (noeud '|'  /  type : T_PIPE)
 		{
+			if (fd_type != (t_type_token) - 1)
+				return (write(2, "syntax error near unexpected token `|'\n", 40), -2);
 			add_token(line, T_PIPE, 1, token);
 			line += 1;
 		}
 		else
 		{
 			len = len_mot_total(line);
-			add_token(line, T_MOT, len, token);
+			if (fd_type != (t_type_token) - 1)
+			{
+				add_token(line, fd_type, len, token);
+				fd_type = (t_type_token) - 1;
+			}
+			else
+				add_token(line, T_MOT, len, token);
 			line += len;
 		}
 	}
+	if (fd_type != (t_type_token) - 1)
+		return (write(2, "syntax error near unexpected token `newline'\n", 45), -2);
 	if (appliquer_dollar_sur_liste_token(token, mini) == -1)
 		return (-1);
 	return (0);
