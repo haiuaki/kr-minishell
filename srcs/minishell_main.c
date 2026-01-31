@@ -644,62 +644,6 @@ void test_print_cmds(t_cmd *cmd, int nbr_cmd)
 	}
 }
 
-// // decouper des commandes par pipe (on les sauvegrade dans le double tableau)
-// char	**split_input_par_pipe(char *line)
-// {
-// 	int		compter_pipe; // compter le nombre de pipe (pour size de double tableau)
-// 	int		size_cmd;
-// 	int		i;
-// 	int		j;
-// 	int		start;
-// 	char	**cmd; // double tableau decoupe par pipe
-
-// 	compter_pipe = 0;
-// 	size_cmd = 0;
-// 	i = 0;
-// 	j = 0;
-// 	start = 0;
-// 	cmd = NULL;
-// 	if (!line || !line[i])
-// 		return (NULL);
-// 	while (line[i])
-// 	{
-// 		if (line[i] == '|')
-// 			compter_pipe++;
-// 		i++;
-// 	}
-// 	if (line[i-1] == '|' || check_pipe_fin(line) == 1) // soit le pipe a la fin, soit l'espace seulement apres le dernier pipe
-// 		size_cmd = compter_pipe;
-// 	else
-// 		size_cmd = compter_pipe + 1;
-// 	cmd = malloc(sizeof(char *) * (size_cmd + 1));
-// 	if (!cmd)
-// 		return (NULL);
-// 	i = 0;
-// 	while (line[i])
-// 	{
-//     if (line[i] == '|')
-//     {
-//         cmd[j] = ft_strndup(line + start, i - start);
-//         if (!cmd[j])
-//         {
-//             // a faire free avant ***
-//             return (NULL);
-//         }
-//         j++;
-//         start = i + 1;
-//     }
-//     i++;
-// 	}
-// 	cmd[j] = ft_strndup(line + start, i - start);
-// 	if (!cmd[j])
-// 	{
-// 		// a faire free avant ***
-// 		return (NULL);
-// 	}
-// 	cmd[j + 1] = NULL;
-// 	return (cmd);
-// }
 
 // On parse tout pour trouver les operations ou les builtins
 // chaque noeud serait d'abord divise que par soit mot, soit redir, soit pipe  (cf. t_type token)
@@ -795,28 +739,6 @@ char	*get_env_name(char *str, int start)
 		return (NULL);
 	if (str[i] == '?') // cas special pour $?
 		return (ft_substr(str, start, 1));
-	// if (str[i] == '{') // s'il y a des accolades apres $
-	// {
-	// 	i++; // on passe le '{'
-	// 	while (str[i] && str[i] != '}') // on compte jusqu'a trouver '}'
-	// 	{
-	// 		i++;
-	// 		len++;
-	// 	}
-	// 	if (str[i] != '}') // s'il n'y a pas de '}' apres le nom de variable d'env, on return NULL
-	// 		return (NULL); // apres il faut gerer l'erreur *******
-	// 	if (len == 0) // ex) ${} , s'il y a pas de variable entre les accolades, on return NULL
-	// 		return (NULL);
-	// 	i--; // on revient a l'index du dernier caractere entre les accolades (avant '}')
-	// 	while (start < i) // pour verifier si le nom de variable entre {} est valide (alphabetique, chiffre, etc)
-	// 	{
-	// 		if (!ft_isalnum(str[i]) && str[i] != '_') // verifier si chaque caractere entre {} est valide
-	// 			return (NULL);
-	// 		i--; // on decremente pour verifier tout jusqu'au debut (apres '{')
-	// 	}
-	// 	return (ft_substr(str, start + 1, len)); 
-	// 	// le cas avec les accolades, on emmene a partir de start + 1 (pour passer le '{') et de taille len (avant '}')
-	// }
 	while (str[i] && (ft_isalnum(str[i]) || str[i] == '_')) 
 	// le nom de variable peut etre soit l'alphabet soit le chiffre soit '_' (dans ce cas on continue pour compter la taille)
 	{
@@ -990,57 +912,6 @@ int	appliquer_dollar_sur_liste_token(t_token **token, t_mini *mini)
 	}
 	return (0);
 }
-
-// int	appliquer_quote(t_token *token, char **env)
-// {
-// 	int		i;
-// 	int		dollar_len;
-// 	char	quote;
-// 	char	*temp;
-// 	char	*env_var;
-
-// 	i = 0;
-// 	dollar_len = 0;
-// 	quote = 0;
-// 	temp = NULL;
-// 	env_var = NULL;
-// 	if (!token || !token->str || !token->str[i])
-// 		return (-1);
-// 	while (token->str[i])
-// 	{
-// 		if ((token->str[i] == '"' || token->str[i] == '\'') && quote == 0)
-// 		{
-// 			quote = token->str[i];
-// 			i++;
-// 			continue ;
-// 		}
-// 		if (token->str[i] == quote && quote != 0)
-// 		{
-// 			quote = 0;
-// 			i++;
-// 			continue ;
-// 		}
-// 		if (token->str[i] == '$' && quote != '\'')
-// 		{
-// 			i++;
-// 			dollar_len = len_dollar_espace(token->str + i);
-// 			temp = strndup(token->str + i, (size_t)dollar_len);
-// 			if (!temp)
-// 				return (-1);
-// 			env_var = get_env_var(temp, env);
-// 			if (env_var != NULL)
-// 				write(1, env_var, ft_strlen(env_var));
-// 			i += dollar_len;
-// 			free(temp);
-// 			temp = NULL;
-// 			continue ;
-// 		}
-// 		write(1, &token->str[i], 1);
-// 		i++;
-// 	}
-// 	return (0);
-// }
-
 
 int	main(int ac, char **av, char **env)
 {
