@@ -519,6 +519,11 @@ t_cmd	*malloc_cmd(t_token *token)
 	while (j < nbr_cmd) // j est index, donc ca commence par 0
 	{
 		cmd[j].cmd = NULL; // on initialise tous les pointeurs a NULL (pour proteger)
+		cmd[j].infile = NULL; // <
+		cmd[j].outfile = NULL; // >
+		cmd[j].out_append = 0; // >>
+		cmd[j].heredoc = 0; // <<
+		cmd[j].limiter = NULL; // pour heredoc
 		j++;
 	}
 	return (cmd);
@@ -912,6 +917,8 @@ int	appliquer_dollar_sur_liste_token(t_token **token, t_mini *mini)
 	}
 	return (0);
 }
+
+
 
 int	main(int ac, char **av, char **env)
 {

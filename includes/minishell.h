@@ -69,6 +69,11 @@ typedef struct s_token
 typedef struct s_cmd
 {
 	char	**cmd;
+	char	*infile; // fichier de redirection entree (<)
+	char	*outfile; // fichier de redirection sortie (>)
+	int		out_append; // 1 si redirection en mode append (>>), 0 sinon
+	int		heredoc; // 1 si redirection heredoc (<<), 0 sinon
+	char	*limiter; // limiteur pour heredoc
 }	t_cmd;
 
 // structure du contexte global minishell 
