@@ -524,6 +524,10 @@ t_cmd	*malloc_cmd(t_token *token)
 		cmd[j].out_append = 0; // >>
 		cmd[j].heredoc = 0; // <<
 		cmd[j].limiter = NULL; // pour heredoc
+		cmd[j].fd_in = -1;
+		cmd[j].fd_out = -1;
+		cmd[j].in_fail = 0;
+		cmd[j].out_fail = 0;
 		j++;
 	}
 	return (cmd);
@@ -677,13 +681,18 @@ void test_print_cmds(t_cmd *cmd, int nbr_cmd)
 	while (j < nbr_cmd)
 	{
 		printf("command%d:\n", i);
-		while (cmd[j].cmd && cmd[j].cmd[i] != NULL)
+		if (cmd[j].cmd == NULL)
+			printf("cmd: NULL\n");
+		else
 		{
-			printf("arg %d: %s\n", j, cmd[j].cmd[i]);
-			i++;
+			while (cmd[j].cmd && cmd[j].cmd[i] != NULL)
+			{
+				printf("arg %d: %s\n", j, cmd[j].cmd[i]);
+				i++;
+			}
+			j++;
+			i = 0;
 		}
-		j++;
-		i = 0;
 	}
 }
 
@@ -980,6 +989,36 @@ int	appliquer_dollar_sur_liste_token(t_token **token, t_mini *mini)
 	return (0);
 }
 
+// appliquer la redirection outfile (>) pour la commande i
+int	appliquer_outfile(t_mini *mini, int i)
+{
+	if (mini->cmd[i].out_fail || mini->cmd[i].in_fail) // si deja echec de redir in ou out, on ne fait rien
+		return (0);
+	if (mini->cmd[i].outfile == NULL) // proteger au cas ou outfile est NULL
+	{
+		mini->exit_status = 2;
+		return (-1);
+	}
+	if (mini->cmd[i].fd_out != -1) // si fd_out est deja ouvert, on le ferme d'abord
+	{
+		close(mini->cmd[i].fd_out);
+		mini->cmd[i].fd_out = -1; // reinitialiser fd_out
+	}
+	mini->cmd[i].fd_out = open(mini->cmd[i].outfile, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+	// ouvrir le fichier en ecriture, tronquer s'il existe, creer s'il n'existe pas
+	if (mini->cmd[i].fd_out < 0) // si echec d'ouverture
+	{
+		if (mini->cmd[i].out_fail == 0 && mini->cmd[i].in_fail == 0) // pour ne pas afficher plusieurs fois l'erreur
+			perror(mini->cmd[i].outfile); // afficher l'erreur
+		mini->exit_status = 1; // mettre le code de sortie a 1
+		mini->cmd[i].ft_out = -1; // marquer que l'ouverture a echoue
+		mini->cmd[i].out_fail = 1; // marquer que l'ouverture a echoue
+	}
+	return (0);
+}
+
+
+
 
 
 int	main(int ac, char **av, char **env)
@@ -999,6 +1038,8 @@ int	main(int ac, char **av, char **env)
 		return (0);
 	mini->env = env;
 	mini->exit_status = 0;
+	mini->cmd = NULL;
+	mini->nbr_cmd = 0;
 	i = 0;
 	cmd = NULL;
 	while (1)
@@ -1047,6 +1088,8 @@ int	main(int ac, char **av, char **env)
 		int result = add_cmd(parsing, cmd);
 		if (result == -1)
 			return (-1);
+		mini->cmd = cmd;
+		mini->nbr_cmd = count_pipe(parsing) + 1;
 		else if (result == -2)
 		{
 			continue ;
@@ -1060,7 +1103,11 @@ int	main(int ac, char **av, char **env)
 			free(line);
 			continue ;
 		}
-
+		// free cmd a gerer ******************************
+		if (cmd)
+			free(cmd); // il faut ameliorer apres *************************
+		mini->cmd = NULL;
+		mini->nbr_cmd = 0;
 		free_tokens(&parsing);
 		free(line);
 	}
