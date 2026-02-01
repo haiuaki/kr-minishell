@@ -1045,6 +1045,21 @@ int	appliquer_append(t_mini *mini, int i)
 	return (0);
 }
 
+// Passe la structure globale et l'index de la commande en argument
+// et applique la redirection de sortie en fonction du type (>, >>)
+void	process_out_redir(t_mini *mini, int i)
+{
+	if (!mini || i < 0 || i >= mini->nbr_cmd) // si mini n'existe pas, index i est invalide
+		return ;
+	if (!mini->cmd || !mini->cmd[i].outfile) // si cmd n'existe pas ou outfile est NULL
+		return ;
+	if (mini->cmd[i].out_fail || mini->cmd[i].in_fail) // si deja echec de redir in ou out, on ne fait rien
+		return ;
+	if (!mini->cmd[i].out_append) // si out_append == 0, c'est une redirection simple (>)
+		appliquer_outfile(mini, i);
+	else if (mini->cmd[i].out_append == 1) // si out_append == 1, c'est une redirection en mode append (>>)
+		appliquer_append(mini, i);
+}
 
 
 int	main(int ac, char **av, char **env)
