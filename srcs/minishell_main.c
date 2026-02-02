@@ -1088,6 +1088,24 @@ int	appliquer_infile(t_mini *mini, int i)
 }
 
 
+
+// Préparation du fichier temporaire pour heredoc
+void	preparer_temp_file(t_mini *mini, int i)
+{
+	if (access("temp", F_OK) == 0) // si le fichier "temp" existe deja
+	{
+		close(mini->cmd[i].fd_in); // fermer l'ancien descripteur de fichier
+		unlink("temp"); // supprimer le fichier existant
+	}
+	mini->cmd[i].fd_in = open("temp", O_WRONLY | O_CREAT | O_TRUNC, 0644); // ouvrir/créer le fichier temporaire en écriture
+	// O_TRUNC pour tronquer le fichier s'il existe déjà
+}
+
+
+
+
+
+
 int	main(int ac, char **av, char **env)
 {
 	(void)ac;

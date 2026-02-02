@@ -186,6 +186,11 @@ int		appliquer_append(t_mini *mini, int i); // appliquer la redirection append (
 void	process_out_redir(t_mini *mini, int i); // proceder a la redirection de sortie pour la commande i (> ou >>)
 int		appliquer_infile(t_mini *mini, int i); // appliquer la redirection infile (<) pour la commande i
 
+
+
+
+
+
 // void	ft_echo(char *str, int option_n);
 // void	ft_env(char **env);
 // int		ft_export_all(char **tab, char ***env);
