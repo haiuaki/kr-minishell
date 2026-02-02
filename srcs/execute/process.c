@@ -1,17 +1,19 @@
-void create_child(t_pipex *px, char **argv, char **envp, t_pipex id)
+void create_child(t_cmd *cmd, t_mini *mini, int id)
 {
 	px->pid[id] = fork();
 	if (px->pid[id] < 0)
 		msg_error(px, "fork error");
 	if (px->pid[i] == 0)
+	{
+		set_child(cmd, mini);
 		run_child(*px, argv, envp);
+	}
 }
 
-void	set_child(t_pipex parent, char **av, char **envp, t_pipex id)
+void	set_child(t_cmd *cmd, t_mini *mini, int id)
 // 이걸 t_cmd cmd, mini 로 바꿔야
 {
-	
-	copy_pipex(&px, &parent);
+	1) -> parent 파이프 배열 /fd / 명령 배열 참조하기 / 복사가 아니라 참조..
 	px.cmd[뭐꼬] = NULL;
 	px.cmd_args[뭐꼬] = NULL; // 파싱에서 이미 받아오나?
 	if (px[id].infile < 0)
@@ -24,7 +26,7 @@ void	set_child(t_pipex parent, char **av, char **envp, t_pipex id)
 	}
 	setup_fds(&px, 1);
 	close_fds(cmd, mini);
-	run_child(&parent, &px, av[2], envp)
+	run_child(&parent, &px, av[2], envp) // exec or builtin
 }
 
 setup_fds(&px, 1)
@@ -48,33 +50,22 @@ close_fds(t_cmd cmd, mini)
 	모든 pipefd[*][0/1] close
 	redir 용 오픈한 fd 도 dup2 했으면 클로즈
 	히어독 fd 도 dup2 후 클로즈
+	child 는 exec 전에 닫기
+	parent 는 각 fork 이후 바로 닫아야 
 }
 
 void	run_child(t_pipex *parent, t_pipex *px, t_mini *mini)
 {
-	px->cmd_args = ft_split(arg, ' ');
-	if (!px->cmd_args || !px->cmd_args[0])
-		child_error(parent, px);
-	if (ft_strchr(px->cmd_args[0], '/'))
-	{
-		px->cmd = ft_strdup(px->cmd_args[0]);
-		if (!px->cmd || access(px->cmd, X_OK) == -1)
-			child_error(parent, px);
-	}
-	else
-	{
-		px->cmd = get_cmd(px->cmd_paths, px->cmd_args[0]);
-		if (!px->cmd)
-			child_error(parent, px);
-	}
-	do_bi(if_bi(cmd, mini))
+	do_bi(if_bi(cmd, mini) < enum으로 나오는거로 패런트 차일드 갈라도 되나 전역 뭐시기인지 체크)
 	else PATH 탐색 실행파일 경로 결정
 	if (cmd[i].cmd[0] "/" 큰 따옴표인지 뭔지는 기재 방식 확인하기)
 		excve(path, argv, ini->env)
 	if (cmd[i].cmd[0] !!! "/")
 		ft_split (PATH) 후보 경로들 만들고
 		exceve
-	exceve(path, mini->argv, mini->env);
+	// 위에 거 이상한 소리 한 걸 수 있고 cmd[i].argv 기준 체크.. 
+	////// 클로즈 여기서 해야하나,,??
+	exceve(cmd_path, cmd[i].argv, mini->env);
 	pipex_free(px);
 	pipex_free(parent);
 	perror("execve");
@@ -102,14 +93,13 @@ int parent_process (t_cmd cmd, mini)
 			while (i < nbr_cmd - 1)
 			{
 				create_child(px, argv, envp, i)
+				close (pipefd) - parent 는 각 fork 이후에 close 필요한데 이게 여기여야 하나..??
 				// 이 함수는 pipe nbr_cmd - 1 개 생성
 				// pipefd[k][2] 생성 동적 할당
-				if (pid = child process)
-					set_child(cmd, mini);
-			}
 		}
-		while (each pipe for created child process i < nbr_cmd - 1)
-			close (pipefd 모두)
+		// while (each pipe for created child process i < nbr_cmd - 1)
+		// 	close (pipefd 모두) // 불필요한 pipe end 각 포크 이후 바로 닫아야.. EOF 없어서 영원히 대기하게 됨
+		// 					// 얘 위치 이상한 거 같음..
 		waitpid(px.pid1..., NULL, 0);
 		while (each pipe for created child process)
 			close_pipe(&px);
