@@ -521,10 +521,11 @@ t_cmd	*malloc_cmd(t_token *token)
 		cmd[j].cmd = NULL; // on initialise tous les pointeurs a NULL (pour proteger)
 		cmd[j].infile = NULL; // <
 		cmd[j].outfile = NULL; // >
+		cmd[j].temp_heredoc = NULL; // pour heredoc
 		cmd[j].out_append = 0; // >>
 		cmd[j].heredoc = 0; // <<
 		cmd[j].limiter = NULL; // pour heredoc
-		cmd[j].pid_heredoc = -1;
+		cmd[j].pid_heredoc = -1; // pid pour heredoc (fork)
 		cmd[j].fd_in = -1;
 		cmd[j].fd_out = -1;
 		cmd[j].in_fail = 0;
@@ -1093,11 +1094,34 @@ int	appliquer_infile(t_mini *mini, int i)
 // Préparation du fichier temporaire pour heredoc
 void	preparer_temp_file(t_mini *mini, int i)
 {
-	if (mini->cmd[i].fd_in != -1)
+	char	*temp_index; // pour faire l'etiquette de l'index du fichier temporaire
+
+	if (mini->cmd[i].fd_in != -1) // si fd_in est deja ouvert, on le ferme d'abord
 		close (mini->cmd[i].fd_in); // fermer l'ancien descripteur de fichier
-	if (access("temp", F_OK) == 0) // si le fichier "temp" existe deja
-		unlink("temp"); // supprimer le fichier existant
-	mini->cmd[i].fd_in = open("temp", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (mini->cmd[i].temp_heredoc)
+	{
+		unlink(mini->cmd[i].temp_heredoc); // supprimer l'ancien fichier temporaire s'il existe
+		free(mini->cmd[i].temp_heredoc); // free l'ancien nom de fichier temporaire
+		mini->cmd[i].temp_heredoc = NULL; // reinitialiser a NULL
+	}
+	temp_index = ft_itoa(i); // convertir l'index i en string pour nommer l'index du fichier temporaire
+	if (!temp_index)
+	{
+		mini->cmd[i].in_fail = 1;
+		perror("malloc: temp index");
+		return ;
+	}
+	mini->cmd[i].temp_heredoc = ft_strjoin("temp_", temp_index); // nom du fichier temporaire pour heredoc"
+	free(temp_index); // liberer temp_index apres utilisation
+	if (!mini->cmd[i].temp_heredoc) // si echec de malloc pour le nom du fichier temporaire
+	{
+		mini->cmd[i].in_fail = 1;
+		perror("malloc: temp heredoc name");
+		return ;
+	}
+	if (access(mini->cmd[i].temp_heredoc, F_OK) == 0) // si le fichier mini->cmd[i].temp_heredoc existe deja
+		unlink(mini->cmd[i].temp_heredoc); // supprimer le fichier existant
+	mini->cmd[i].fd_in = open(mini->cmd[i].temp_heredoc, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	// ouvrir (créer) le fichier temporaire en écriture
 	if (mini->cmd[i].fd_in == -1)
 	{
@@ -1129,7 +1153,7 @@ void	collecter_heredoc_lines(int fd, char *delimiter)
 }
 
 // appliquer heredoc dans le processus enfant
-void	appliquer_heredoc_child(t_mini *mini, int i)
+void	appliquer_heredoc_enfant(t_mini *mini, int i)
 {
 	// il faut gerer des signaux; plus tard *******************************************
 	preparer_temp_file(mini, i); // creer un fichier temporaire
@@ -1140,22 +1164,44 @@ void	appliquer_heredoc_child(t_mini *mini, int i)
 	exit(0);
 }
 
-
-int	appliquer_limiter(t_mini *mini, int i)
+// appliquer heredoc pour la commande i
+int	appliquer_heredoc_cmd(t_mini *mini, int i)
 {
-	int	status;
-	int	exit_status;
+	int	status; // pour waitpid (si le processus enfant s'est termine correctement)
+	int	exit_status; // pour resultat du waitpid (code de sortie du processus enfant)
 
-	mini->cmd[i].pid_heredoc = fork();
-	if (mini->cmd[i].pid_heredoc == -1)
+	mini->cmd[i].pid_heredoc = fork(); // creer un processus enfant pour gerer heredoc
+	if (mini->cmd[i].pid_heredoc == -1) // si echec de fork
 		return (-1);
-	if (mini->cmd[i].pid_heredoc == 0)
-		appliquer_heredoc_child(mini, i);
-	if (waitpid(mini->cmd[i].pid_heredoc, &status, 0) == -1)
-		return (-1);
-	if (WIFEXITED(status))
+	if (mini->cmd[i].pid_heredoc == 0) // processus enfant
+		appliquer_heredoc_enfant(mini, i);
+	if (waitpid(mini->cmd[i].pid_heredoc, &status, 0) == -1) // attendre la fin du processus enfant
+		return (-1); // si echec de waitpid
+	if (WIFEXITED(status)) // si le processus enfant s'est termine correctement
 	{
-
+		exit_status = WEXITSTATUS(status); // recuperer le code de sortie
+		if (exit_status != 0) // si le code de sortie n'est pas 0 (erreur dans heredoc)
+		{
+			mini->cmd[i].in_fail = 1; // marquer l'echec de heredoc
+			mini->exit_status = exit_status; // mettre a jour le code de sortie global
+			return (-1); // retourner -1 pour indiquer l'erreur
+		}
+	}
+	else // si le processus enfant ne s'est pas termine correctement
+	{
+		mini->cmd[i].in_fail = 1; // marquer l'echec de heredoc
+		mini->exit_status = 1; // mettre a jour le code de sortie global
+		return (-1);
+	}
+	if (mini->cmd[i].fd_in != -1) // si fd_in est deja ouvert, on le ferme d'abord
+		close(mini->cmd[i].fd_in); // fermer le fd_in en lecture ecriture
+	mini->cmd[i].fd_in = open(mini->cmd[i].temp_heredoc, O_RDONLY); // reouvrir le fichier temp en lecture seule
+	if (mini->cmd[i].fd_in == -1) // si echec d'ouverture de temp en lecture
+	{
+		mini->cmd[i].in_fail = 1;
+		mini->exit_status = 1;
+		perror("open temp for reading"); // afficher l'erreur
+		return (-1);
 	}
 	return (0);
 }
