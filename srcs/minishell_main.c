@@ -519,10 +519,21 @@ t_cmd	*malloc_cmd(t_token *token)
 	while (j < nbr_cmd) // j est index, donc ca commence par 0
 	{
 		cmd[j].cmd = NULL; // on initialise tous les pointeurs a NULL (pour proteger)
-		cmd[j].infile = NULL; // <
-		cmd[j].outfile = NULL; // >
+
+		// redirections: tableaux (on garde tous les noms de fichiers dans l'ordre)
+		cmd[j].infile = NULL; // liste des fichiers pour  < (char **, termine par NULL)
+		cmd[j].outfile = NULL; // liste des fichiers pour > et >> (char **, termine par NULL)
+
+		// out_append[j] correspond a outfile[j]: 1 pour >> (append), 0 pour > (truncate)
+		cmd[j].out_append = malloc(sizeof(int) * 1);
+		if (!cmd[j].out_append)
+			return (NULL);
+		cmd[j].out_append[0] = -1; // initialiser a -1 pour proteger
+		// vu que la valeur de out_append sera soit 1 soit 0, on peut utiliser -1 (qu'on n'utilise pas pour la valeur) pour proteger
+		// ca marquera la fin du tableau int
+		// ex) out_append = {0,1,-1}  (pour 2 fichiers de sortie)
+
 		cmd[j].temp_heredoc = NULL; // pour heredoc
-		cmd[j].out_append = 0; // >>
 		cmd[j].heredoc = 0; // <<
 		cmd[j].limiter = NULL; // pour heredoc
 		cmd[j].pid_heredoc = -1; // pid pour heredoc (fork)
@@ -533,6 +544,32 @@ t_cmd	*malloc_cmd(t_token *token)
 		j++;
 	}
 	return (cmd);
+}
+
+// compter le nombre de chaines dans un double tableau char**
+int	len_tab_char(char **tab)
+{
+	int	j;
+
+	j = 0;
+	if (!tab)
+		return (0);
+	while (tab[j])
+		j++;
+	return (j);
+}
+
+// compter le nombre d'elements dans un tableau int*
+int	len_tab_int(int *tab)
+{
+	int	j;
+
+	j = 0;
+	if (!tab)
+		return (0);
+	while (tab[j] != -1) // on utilise -1 pour marquer la fin du tableau int
+		j++;
+	return (j);
 }
 
 // fonction pour agrandir un tableau et rajouter une chaine, comme pour le builtin export
@@ -565,16 +602,20 @@ char** add_double_tab(char **tab, char *str, int size)
 // ex) echo hihi | cat -e
 // l'objectif, c'est de mettre  tab[0] = {"echo", "hihi", NULL}, tab[1] = {"cat", "-e", NULL}  dans la liste chainee cmd
 // ( remplir  cmd[0].cmd = {"echo","hihi",NULL}, cmd[1].cmd = {"cat","-e",NULL} )
-int add_cmd(t_token *token, t_cmd *cmd/*, int nbr_cmd*/)
+int add_cmd(t_token *token, t_cmd *cmd)
 {
 	int index_cmd; // l'index pour la structure  ex) tab[0] = {"echo", "hihi", NULL}, tab[1] = {"cat", "-e", NULL}
-	int i; // l'index pour l'argument de chaque structure  ex) tab[0][0] = "echo", tab[0][1] = "hihi", tab[0][2] = NULL
-	int	redir_existe;
+	int 	i; // l'index pour l'argument de chaque structure  ex) tab[0][0] = "echo", tab[0][1] = "hihi", tab[0][2] = NULL
+	int		redir_existe;
 	// printf("--- add_cmd ---\n");
+	char	*file_temp; // temporaire pour le nom de fichier
+	int		size_file_tab;
 
 	index_cmd = 0;
 	i = 0;
 	redir_existe = 0;
+	file_temp = NULL;
+	size_file_tab = 0;
 	// if (!cmd || nbr_cmd <= 0)
 	// 	return (-1);
 	while (token) // pendant que le noeud dans la liste chainee existe
@@ -603,16 +644,28 @@ int add_cmd(t_token *token, t_cmd *cmd/*, int nbr_cmd*/)
 		}
 		else if (token->type_token == T_FD_IN)
 		{
-			if (cmd[index_cmd].infile)
-				free(cmd[index_cmd].infile); // s'il y a deja un infile, on le libere avant de le remplacer pour le nouveau
-			// cf) cat < file1 < file2  -> on garde file2 seulement (donc, on libere file1 d'abord)
-			cmd[index_cmd].infile = ft_strdup(token->str); // on ajoute le nom du fichier pour redirection <
+			file_temp = ft_strdup(token->str); // dupliquer le nom du fichier (redirection <) pour stocker dans cmd
+			if (!file_temp)
+				return (-1);
+			size_file_tab = len_tab_char(cmd[index_cmd].infile); // compter la taille actuelle du tableau infile
+			cmd[index_cmd].infile = add_double_tab(cmd[index_cmd].infile, file_temp, size_file_tab); // agrandir le tableau infile pour ajouter le nouveau fichier
+			if (!cmd[index_cmd].infile)
+				return (-1);
+			// ex) cat < file1 < file2  -> infile = {"file1", "file2", NULL}
+			// on n'ecrase plus, on stocke tout dans l'ordre
 		}
 		else if (token->type_token == T_FD_OUT)
 		{
-			if (cmd[index_cmd].outfile)
-				free(cmd[index_cmd].outfile);
-			cmd[index_cmd].outfile = ft_strdup(token->str); // on ajoute le nom du fichier pour redirection >
+			file_temp = ft_strdup(token->str); // dupliquer le nom du fichier (redirection >) pour stocker dans cmd
+			if (!file_temp)
+				return (-1);
+			size_file_tab = len_tab_char(cmd[index_cmd].outfile); // compter la taille actuelle du tableau outfile
+			cmd[index_cmd].outfile = add_double_tab(cmd[index_cmd].outfile, file_temp, size_file_tab); // agrandir le tableau outfile pour ajouter le nouveau fichier
+			if (!cmd[index_cmd].outfile)
+				return (-1);
+			// if (cmd[index_cmd].outfile)
+			// 	free(cmd[index_cmd].outfile);
+			// cmd[index_cmd].outfile = ft_strdup(token->str); // on ajoute le nom du fichier pour redirection >
 			cmd[index_cmd].out_append = 0; // s'assurer que c'est pas en mode append
 		}
 		else if (token->type_token == T_FD_OUT_APPEND)
@@ -1019,8 +1072,7 @@ int	appliquer_outfile(t_mini *mini, int i)
 		mini->exit_status = 1; // mettre le code de sortie a 1
 		mini->cmd[i].fd_out = -1; // marquer que l'ouverture a echoue
 		mini->cmd[i].out_fail = 1; // marquer que l'ouverture a echoue
-	}
-	return (0);
+	}	return (0);
 }
 
 // appliquer la redirection outfile (>>) pour la commande i
