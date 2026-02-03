@@ -2,6 +2,37 @@
 
 // echo hello | cat -e > out1 > out2
 
+void	ft_execute(t_mini *mini, char **cmd)
+{
+	// char	*cmd;
+	// char	*cmd_path;
+
+	// cmd = options[0];
+	// if (!cmd)
+	// 	exit(0);
+	// if (is_builtin(cmd))
+	// 	exit(ft_builtin(options, data));
+	// cmd_path = get_cmd_path(cmd, data->path);
+	// if (!cmd_path)
+	// {
+	// 	g_exit_status = 127;
+	// 	error_command_msg(cmd, CMD_ERROR);
+	// 	return ;
+	// }
+	// if (is_directory(cmd_path))
+	// {
+	// 	error_command_msg(cmd, DIREC_ERROR);
+	// 	exit(126);
+	// }
+	char *command = cmd[0]; // 바껴야 될 라인 밑의 줄 첫 씨엠디는 씨엠디 패스임..
+	char **str;
+	execve(command, cmd, str); // 주소를 찾아가서(=참조해서 // 인자가 미니의 주소) 컨텐츠를 .으로 열어보는 행위 자체가 화살표다
+	// {
+	// 	error_command(cmd);
+	// 	exit(126);
+	// }
+}
+
 void	child_center(t_mini *mini, t_cmd cmd, int *pipe_fd, int i)
 {
 	printf("cmd.cmd[0] : %s\n", cmd.cmd[0]);
