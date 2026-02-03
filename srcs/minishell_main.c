@@ -1090,7 +1090,6 @@ int	appliquer_infile(t_mini *mini, int i)
 }
 
 
-
 // Préparation du fichier temporaire pour heredoc
 void	preparer_temp_file(t_mini *mini, int i)
 {
@@ -1156,6 +1155,7 @@ void	collecter_heredoc_lines(int fd, char *delimiter)
 void	appliquer_heredoc_enfant(t_mini *mini, int i)
 {
 	// il faut gerer des signaux; plus tard *******************************************
+	signal(SIGINT, SIG_DFL); // quand on saisit ctrl+C, le processus enfant doit etre termine
 	preparer_temp_file(mini, i); // creer un fichier temporaire
 	if (mini->cmd[i].fd_in == -1)
 		exit (1);
@@ -1164,12 +1164,20 @@ void	appliquer_heredoc_enfant(t_mini *mini, int i)
 	exit(0);
 }
 
+
+void	appliquer_sigint_prompt(int sig)
+{
+	(void)sig;
+	write(1, "^C\n", 3);
+}
+
 // appliquer heredoc pour la commande i
 int	appliquer_heredoc_cmd(t_mini *mini, int i)
 {
 	int	status; // pour waitpid (si le processus enfant s'est termine correctement)
 	int	exit_status; // pour resultat du waitpid (code de sortie du processus enfant)
 
+	signal(SIGINT, SIG_IGN); // le processus parent ignore ctrl+C pendant le processus enfant (heredoc fork)
 	mini->cmd[i].pid_heredoc = fork(); // creer un processus enfant pour gerer heredoc
 	if (mini->cmd[i].pid_heredoc == -1) // si echec de fork
 		return (-1);
@@ -1177,6 +1185,7 @@ int	appliquer_heredoc_cmd(t_mini *mini, int i)
 		appliquer_heredoc_enfant(mini, i);
 	if (waitpid(mini->cmd[i].pid_heredoc, &status, 0) == -1) // attendre la fin du processus enfant
 		return (-1); // si echec de waitpid
+	signal(SIGINT, appliquer_sigint_prompt); // apres la fin du processus enfant, 
 	if (WIFEXITED(status)) // si le processus enfant s'est termine correctement
 	{
 		exit_status = WEXITSTATUS(status); // recuperer le code de sortie
