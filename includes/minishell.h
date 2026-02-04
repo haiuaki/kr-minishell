@@ -189,6 +189,7 @@ char	*ajouter_char(char *resultat, char c); // ajouter un char c a la fin de la 
 char	*appliquer_env_var(char *resultat, char *str, t_mini *mini, int *i); // appliquer la variable d'env dans str a la position i (qui est le $)
 char	*remplacer_dollar(char *str, t_mini *mini); // remplacement de $ par la valeur de la variable d'env
 int		appliquer_dollar_sur_liste_token(t_token **token, t_mini *mini); // appliquer le remplacement de $ sur toute la liste chainee token
+int		appliquer_quote_sur_liste_token(t_token **token); // enlever des quotes pour chaque token de type T_MOT et fd redir
 
 // =====================================================================================================================
 
