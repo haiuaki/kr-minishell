@@ -1146,13 +1146,13 @@ int	appliquer_quote_sur_liste_token(t_token **token)
 			|| temp->type_token == T_FD_HEREDOC))
 			// on enleve les quotes si le type de token est T_MOT ou redir
 		{
-			printf("avant enlever quote: [%s]\n", temp->str);
+			// printf("avant enlever quote: [%s]\n", temp->str);
 			new_str = enlever_quote_dans_token(temp->str); // enlever les quotes dans token->str
 			if (!new_str)
 				return (free_tokens(token), -1);
 			free(temp->str);
 			temp->str = new_str; // on met a jour token->str avec le nouveau str
-			printf("apres enlever quote: [%s]\n", temp->str);
+			// printf("apres enlever quote: [%s]\n", temp->str);
 		}
 		temp = temp->next; // passer au noeud suivant
 	}
