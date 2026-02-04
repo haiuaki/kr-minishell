@@ -572,10 +572,35 @@ int	len_tab_int(int *tab)
 	return (j);
 }
 
+// fonction pour agrandir un tableau et rajouter une valeur int (1 ou 0), comme pour out_append
+// tab termine par -1,  size = nombre de valeurs avant -1
+int	*add_double_tab_int(int *tab, int val)
+{
+	int *new_tab; // nouveau tableau agrandi
+	int j; // index pour parcourir les tableaux
+
+	size = len_tab_int(tab); // compter le nombre d'elements dans le tableau int
+	if (!tab && size > 0) // proteger au cas ou tab est NULL mais size > 0
+			return (NULL);
+	new_tab = malloc(sizeof(int) * (size + 2)); // +1 pour le nouveau +1 pour -1
+	if (!new_tab)
+			return (NULL);
+	j = 0;
+	while (j < size)
+	{
+			new_tab[j] = tab[j]; // copier chaque valeur
+			j++;
+	}
+	new_tab[j] = val; // ajouter la nouvelle valeur (1 ou 0)
+	new_tab[j + 1] = -1; // terminer par -1
+	free(tab); // vu qu'on a bien cree un nouveau tableau agrandi, on libere l'ancien tableau
+	return (new_tab);
+}
+
 // fonction pour agrandir un tableau et rajouter une chaine, comme pour le builtin export
 // char **tab : double tableau actuel, *str : nouveau tableau a ajouter,
 // int  size : taille actuelle de double tableau
-char** add_double_tab(char **tab, char *str, int size)
+char** add_double_tab_char(char **tab, char *str, int size)
 {
     char **new_tab; // nouveau double tableau agrandi
     int j; // index pour parcourir les tableaux
@@ -634,7 +659,7 @@ int add_cmd(t_token *token, t_cmd *cmd)
 			}
 			else // s'il y a deja un argument dans le double tableau, on agrandit le tableau (pour ajouter un nouvel arguement)
 			{
-				cmd[index_cmd].cmd = add_double_tab(cmd[index_cmd].cmd, NULL, i); 
+				cmd[index_cmd].cmd = add_double_tab_char(cmd[index_cmd].cmd, NULL, i); 
 				// ex) tab[0] = {"echo", NULL} -> {"echo", "hihi", NULL} 
 				if (!cmd[index_cmd].cmd)
 					return (-1);
@@ -648,7 +673,7 @@ int add_cmd(t_token *token, t_cmd *cmd)
 			if (!file_temp)
 				return (-1);
 			size_file_tab = len_tab_char(cmd[index_cmd].infile); // compter la taille actuelle du tableau infile
-			cmd[index_cmd].infile = add_double_tab(cmd[index_cmd].infile, file_temp, size_file_tab); // agrandir le tableau infile pour ajouter le nouveau fichier
+			cmd[index_cmd].infile = add_double_tab_char(cmd[index_cmd].infile, file_temp, size_file_tab); // agrandir le tableau infile pour ajouter le nouveau fichier
 			if (!cmd[index_cmd].infile)
 				return (-1);
 			// ex) cat < file1 < file2  -> infile = {"file1", "file2", NULL}
@@ -660,13 +685,14 @@ int add_cmd(t_token *token, t_cmd *cmd)
 			if (!file_temp)
 				return (-1);
 			size_file_tab = len_tab_char(cmd[index_cmd].outfile); // compter la taille actuelle du tableau outfile
-			cmd[index_cmd].outfile = add_double_tab(cmd[index_cmd].outfile, file_temp, size_file_tab); // agrandir le tableau outfile pour ajouter le nouveau fichier
+			cmd[index_cmd].outfile = add_double_tab_char(cmd[index_cmd].outfile, file_temp, size_file_tab); // agrandir le tableau outfile pour ajouter le nouveau fichier
 			if (!cmd[index_cmd].outfile)
 				return (-1);
+			cmd[index_cmd].out_append = add_double_tab_int(cmd[index_cmd].out_append, 0)); // agrandir le tableau out_append pour ajouter 0 (truncate) <- puisqu'on est dans la condition T_FD_OUT >
 			// if (cmd[index_cmd].outfile)
 			// 	free(cmd[index_cmd].outfile);
 			// cmd[index_cmd].outfile = ft_strdup(token->str); // on ajoute le nom du fichier pour redirection >
-			cmd[index_cmd].out_append = 0; // s'assurer que c'est pas en mode append
+			// cmd[index_cmd].out_append = 0; // s'assurer que c'est pas en mode append
 		}
 		else if (token->type_token == T_FD_OUT_APPEND)
 		{

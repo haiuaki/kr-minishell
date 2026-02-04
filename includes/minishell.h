@@ -73,7 +73,7 @@ typedef struct s_cmd
 	// cmd redir
 	char	**infile; // tableau des fichiers de redirection entree (<)
 	char	**outfile; // tableau des fichiers de redirection sortie (>)
-	int		*out_append; // tableau, 1 si redirection en mode append (>>), 0 sinon
+	int		*out_append; // tableau, 1 si redirection en mode append (>>), 0 sinon (>)
 	// char	*infile; // fichier de redirection entree (<)
 	// char	*outfile; // fichier de redirection sortie (>)
 
@@ -171,7 +171,8 @@ void	free_tokens(t_token **token); // liste free
 
 int 	count_pipe(t_token *token); // compter le nombre de pipes dans la liste chainee
 t_cmd	*malloc_cmd(t_token *token); // alluer la liste chainee cmd (divisee par pipe)
-char**	add_double_tab(char **tab, char *str, int size); // agrandir un tableau et rajouter une chaine
+char**	add_double_tab_char(char **tab, char *str, int size); // agrandir un tableau et rajouter une chaine
+int	*add_double_tab_int(int *tab, int val); // agrandir un tableau int et rajouter une valeur int
 int 	add_cmd(t_token *token, t_cmd *cmd); // parcours les token, et rajoute les token dans les tableaux
 int		decouper_cmd_par_pipe(t_token *token, t_cmd **cmd);
 
