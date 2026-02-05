@@ -213,7 +213,7 @@ int		appliquer_infile(t_mini *mini, int i); // appliquer la redirection infile (
 int	preparer_temp_file_name(t_mini *mini, int j, int n);
 // void	preparer_temp_file(t_mini *mini, int i); // Préparation du fichier temporaire pour heredoc
 int		collecter_heredoc_lines(int fd, char *delimiter); // recuperer les lignes de heredoc, puis les stocker dans le fichier temp
-void	appliquer_heredoc_enfant(t_mini *mini, int i); // appliquer heredoc dans le processus enfant
+void	appliquer_heredoc_enfant(t_mini *mini, int j, int n); // appliquer heredoc dans le processus enfant
 
 // signaux
 void	init_signaux(void); // gerer les sigaux (ctrl-C, ctrl-\)

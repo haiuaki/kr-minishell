@@ -1322,7 +1322,9 @@ void	print_heredoc_warning_ctrl_d(char *delimiter)
 int	collecter_heredoc_lines(int fd, char *delimiter)
 {
 	char *line;
-	
+
+	if (!delimiter)
+		return (1);
 	while (1)
 	{
 		line = readline("> "); // afficher un prompte qui ressemble a heredoc
@@ -1331,43 +1333,62 @@ int	collecter_heredoc_lines(int fd, char *delimiter)
 		if (delimiter && ft_strcmp(line, delimiter) == 0) // quand on croise limiter -> on quitte
 		// si delimiter est NULL -> erreur (pour proteger on ajoute dans la condition delimiter aussi)
 		{
-			// if (!line) // ctrl d message d'erreur a faire apres *************************
-			// 	return;
 			free(line); // liberer readline
 			return (0); // quitte la boucle (et cette fonction)
 		}
-		write(fd, line, ft_strlen(line)); // le resultat
-		write(fd, "\n", 1); // vu que readline n'applique pas automatiquement '\n', on en ajoute a la fin
+		if (write(fd, line, ft_strlen(line)) == -1 || write(fd, "\n", 1) == -1) // ecrire la ligne dans le fichier temp (le resultat de line + '\n')
+		// le resultat de readline n'applique pas automatiquement '\n', on en ajoute a la fin
+		// si write retourne -1, c'est une erreur d'ecriture, on libere readline et on retourne -1
+		{
+			free(line);
+			return (-1); // si echec d'ecriture
+		}
 		free(line); // free readline avant de quitter la fonction hihi
 	}
 	return (0);
 }
 
 // appliquer heredoc dans le processus enfant
-void	appliquer_heredoc_enfant(t_mini *mini, int i)
+// le processus enfant: ecrire les lignes du heredoc n dans le fichier temporaire temp_heredoc[n] jusqu'a ce qu'on arrive a limiter[n], puis quitter
+void	appliquer_heredoc_enfant(t_mini *mini, int j, int n)
 {
 	int	resultat;
 	int	fd_temp;
 
-	signal(SIGINT, SIG_DFL); // quand on saisit ctrl+C, le processus enfant doit etre termine
-	signal(SIGQUIT, SIG_IGN); // quand on saisit ctrt+\, on l'ignore (ca change rien)
-	if (!mini->cmd[i].temp_heredoc) // si le nom du fichier n'existe pas, on finit
+	signal(SIGINT, SIG_DFL); // quand on saisit ctrl-C, le processus enfant doit etre termine (ctrl-C doit finir seulement le processus enfant)
+	signal(SIGQUIT, SIG_IGN); // quand on saisit ctrt-\, on l'ignore (ca change rien)
+	if (!mini || j < 0 || j >= mini->nbr_cmd) // si mini n'existe pas, index i est invalide
 		exit (1);
-	fd_temp = open(mini->cmd[i].temp_heredoc, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (n < 0 || n >= mini->cmd[j].compter_heredoc) // si n est invalide (ex. n = 2 alors que compter_heredoc = 2, donc les index valides sont 0 et 1)
+		exit (1);
+	if (!mini->cmd[j].temp_heredoc || !mini->cmd[j].temp_heredoc[n]) // si le nom du fichier n'existe pas, on finit
+		exit (1);
+	fd_temp = open(mini->cmd[j].temp_heredoc[n], O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	// ouvrir (créer) le fichier temporaire en écriture (on ecrase le contenu prcedent)
 	if (fd_temp == -1)
 	{
 		perror("open temp");
 		exit (1);
 	}
-	resultat = collecter_heredoc_lines(fd_temp, mini->cmd[i].limiter);
+	if (!mini->cmd[j].limiter || !mini->cmd[j].limiter[n]) // si limiter est NULL, c'est une erreur, on finit
+	{
+		close(fd_temp);
+		exit (1);
+	}
+	resultat = collecter_heredoc_lines(fd_temp, mini->cmd[j].limiter[n]);
 	// collecter des lignes heredoc dans le fichier temp
-	// (lire des lignes jusqu'a ce qu'on arrive limiter, puis les ecrire dans le fichier temp)
+	// (lire des lignes jusqu'a ce qu'on arrive limiter[n], puis les ecrire dans le fichier temp)
 	if (resultat == 1) // ctrl-D
 	{
-		print_heredoc_warning_ctrl_d(mini->cmd[i].limiter);
+		print_heredoc_warning_ctrl_d(mini->cmd[j].limiter[n]);
 		close(fd_temp);
 		exit (0);
+	}
+	if (resultat < 0) // erreur dans collecter_heredoc_lines
+	{
+		perror("collecter heredoc");
+		close(fd_temp);
+		exit (1);
 	}
 	close(fd_temp); //fermer le fd temp dans l'enfant pour eviter les leak
 	exit(0);
@@ -1402,23 +1423,34 @@ int	appliquer_heredoc_cmd(t_mini *mini, int j)
 		return (0);
 
 	signal(SIGINT, SIG_IGN); // le processus parent ignore ctrl+C pendant le processus enfant (heredoc fork)
-	signal(SIGQUIT, SIG_IGN);
+	signal(SIGQUIT, SIG_IGN); // le processus parent ignore ctrl+\ pendant le processus enfant (heredoc fork)
 
+	if (mini->cmd[j].temp_heredoc == NULL) // il faut d'abord allouer le tableau temp_heredoc[] pour stocker les noms des fichiers temporaires de chaque heredoc, avant de remplir temp_heredoc[n]
+	{
+		mini->cmd[j].temp_heredoc = ft_calloc(mini->cmd[j].compter_heredoc + 1, sizeof(char *)); // +1 pour NULL (terminaison)
+		if (!mini->cmd[j].temp_heredoc)
+		{
+			mini->cmd[j].in_fail = 1;
+			mini->exit_status = 1;
+			init_signaux(); // reinitialiser les signaux avant de retourner
+			return (-1);
+		}
+	}
 	while (n < mini->cmd[j].compter_heredoc) // pour chaque heredoc de cette cmd, on prepare le nom du fichier temporaire
 	{
 		if (preparer_temp_file_name(mini, j, n) == -1)
 		{
-			init_signaux(); // reinitialiser les signaux avant de retourner
 			mini->cmd[j].in_fail = 1;
 			mini->exit_status = 1;
+			init_signaux(); // reinitialiser les signaux avant de retourner
 			return (-1);
 		}
 		mini->cmd[j].pid_heredoc = fork(); // creer un processus enfant pour gerer heredoc
 		if (mini->cmd[j].pid_heredoc == -1) // si echec de fork
 		{
-			init_signaux();
 			mini->cmd[j].in_fail = 1;
 			mini->exit_status = 1;
+			init_signaux();
 			return (-1); // si echec de waitpid
 		}
 		if (mini->cmd[j].pid_heredoc == 0) // processus enfant
@@ -1430,12 +1462,13 @@ int	appliquer_heredoc_cmd(t_mini *mini, int j)
 			mini->exit_status = 1;
 			return (-1); // si echec de waitpid
 		}
-		init_signaux(); // apres la fin du processus enfant, on applique des signaux pareils que shell
+		// init_signaux(); // apres la fin du processus enfant, on applique des signaux pareils que shell
 		if (WIFSIGNALED(status))
 		{
 			exit_signal = WTERMSIG(status);
 			mini->cmd[j].in_fail = 1;
 			mini->exit_status = 128 + exit_signal;
+			init_signaux();
 			return (-1);
 		}
 		else if (WIFEXITED(status)) // si le processus enfant s'est termine correctement
@@ -1445,6 +1478,7 @@ int	appliquer_heredoc_cmd(t_mini *mini, int j)
 			{
 				mini->cmd[j].in_fail = 1; // marquer l'echec de heredoc
 				mini->exit_status = exit_status; // mettre a jour le code de sortie global
+				init_signaux(); // reinitialiser les signaux avant de retourner
 				return (-1); // retourner -1 pour indiquer l'erreur
 			}
 		}
@@ -1452,12 +1486,14 @@ int	appliquer_heredoc_cmd(t_mini *mini, int j)
 		{
 			mini->cmd[j].in_fail = 1; // marquer l'echec de heredoc
 			mini->exit_status = 1; // mettre a jour le code de sortie global
+			init_signaux(); // reinitialiser les signaux avant de retourner
 			return (-1);
 		}
-		if (!mini->cmd[j].temp_heredoc && !mini->cmd[j].temp_heredoc[n]) // proteger au cas ou temp_heredoc est NULL
+		if (!mini->cmd[j].temp_heredoc || !mini->cmd[j].temp_heredoc[n]) // proteger au cas ou temp_heredoc est NULL
 		{
 			mini->cmd[j].in_fail = 1;
 			mini->exit_status = 1;
+			init_signaux(); // reinitialiser les signaux avant de retourner
 			return (-1);
 		}
 		n++;
@@ -1470,6 +1506,7 @@ int	appliquer_heredoc_cmd(t_mini *mini, int j)
 		mini->cmd[j].in_fail = 1;
 		mini->exit_status = 1;
 		perror("open temp for reading"); // afficher l'erreur
+		init_signaux(); // reinitialiser les signaux avant de retourner
 		return (-1);
 	}
 	init_signaux(); // reinitialiser les signaux avant de retourner
