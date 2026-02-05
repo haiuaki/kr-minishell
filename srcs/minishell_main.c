@@ -534,7 +534,7 @@ t_cmd	*malloc_cmd(t_token *token)
 		// cf) out_append[n] = 1 pour >> (append),  0 pour > (truncate)
 
 		// cmd[j].temp_heredoc = NULL; // pour heredoc
-		// cmd[j].heredoc = 0; // <<
+		cmd[j].heredoc = 0; // <<
 		// cmd[j].limiter = NULL; // pour heredoc
 		cmd[j].pid_heredoc = -1; // pid pour heredoc (fork)
 		cmd[j].fd_in = -1;
@@ -612,6 +612,7 @@ char** add_double_tab_char(char **tab, char *str, int size)
     while (j < size)
     {
         new_tab[j] = tab[j]; // copier l'adresse de chaque chaine
+				// cf) on copie juste le pointeur (l'adresse)
 				// chaque tab[j] est un pointeur vers une chaine de caracteres
         // cf) char **tab = *tab[] = {"pho", "malatang", NULL}; (tableau de pinteurs vers des chaines)
 				//     char tab[j] -> tab[0] = adresse de "pho", tab[1] = adresse de "malatang" (chaine de caracteres)
@@ -631,15 +632,17 @@ int add_cmd(t_token *token, t_cmd *cmd)
 {
 	int 	index_cmd; // l'index pour la structure  ex) tab[0] = {"echo", "hihi", NULL}, tab[1] = {"cat", "-e", NULL}
 	int 	i; // l'index pour l'argument de chaque structure  ex) tab[0][0] = "echo", tab[0][1] = "hihi", tab[0][2] = NULL
+	int		n; // l'index pour limiters de heredoc
 	int		redir_existe;
 	// printf("--- add_cmd ---\n");
 	char	*mot_temp; // temporaire pour le mot
 	char	*file_temp; // temporaire pour le nom de fichier
-	int		size_file_tab;
+	int		size_file_tab; // pour compter la taille actuelle du tableau de fichiers (infile ou outfile) pour agrandir le tableau et ajouter un nouveau fichier
 	// int		size_mode_tab;
 
 	index_cmd = 0;
 	i = 0;
+	n = 0;
 	redir_existe = 0;
 	mot_temp = NULL;
 	file_temp = NULL;
@@ -720,10 +723,15 @@ int add_cmd(t_token *token, t_cmd *cmd)
 		}
 		else if (token->type_token == T_FD_HEREDOC)
 		{
-			if (cmd[index_cmd].limiter)
-				free(cmd[index_cmd].limiter);
-			cmd[index_cmd].limiter = ft_strdup(token->str); // on ajoute le limiter pour heredoc (<<)  
-			// ex) << EOF  -> limiter = "EOF"
+			n = cmd[index_cmd].compter_heredoc; // n = nombre de heredoc deja existant pour cette commande
+			file_temp = ft_strdup(token->str); // dupliquer le limiter (<< limiter) pour stocker dans cmd[index_cmd].limiter[n]
+			if (!file_temp)
+				return (-1);
+			// size_file_tab = len_tab_char(cmd[index_cmd].limiter); // compter la taille actuelle du tableau limiter pour heredoc
+			cmd[index_cmd].limiter = add_double_tab_char(cmd[index_cmd].limiter, file_temp, n); // agrandir le tableau limiter pour ajouter le nouveau limiter
+			if (!cmd[index_cmd].limiter)
+				return (-1);
+			cmd[index_cmd].compter_heredoc++; // incrementer le nombre de heredoc pour cette commande
 			cmd[index_cmd].heredoc = 1; // marquer que c'est heredoc (<<)
 		}
 		if (token->type_token == T_PIPE) // si on arrive a '|'
@@ -1253,37 +1261,48 @@ int	appliquer_infile(t_mini *mini, int i)
 }
 
 // Préparation du nom de fichier temporaire pour heredoc
-int	preparer_temp_file_name(t_mini *mini, int i)
+// j: index de cmd
+// n: index du heredoc pour cette cmd 
+// ex) cmd1 << limiter1 << limiter2 -> n = 0 pour limiter1, n = 1 pour limiter2
+int	preparer_temp_file_name(t_mini *mini, int j, int n)
 {
-	char	*temp_index; // pour faire l'etiquette de l'index du fichier temporaire
+	char	*index_char;
+	char	*temp_j;
+	char	*tiret_bas;
+	char	*temp_j_n;
 
-	if (!mini || i < 0 || i >= mini->nbr_cmd) // si mini n'existe pas, index i est invalide
+	if (!mini || j < 0 || j >= mini->nbr_cmd) // si mini n'existe pas, index i est invalide
 		return (-1);
-	// if (mini->cmd[i].fd_in != -1) // si fd_in est deja ouvert, on le ferme d'abord
-	// 	close (mini->cmd[i].fd_in); // fermer l'ancien descripteur de fichier
-	if (mini->cmd[i].temp_heredoc)
-	{
-		unlink(mini->cmd[i].temp_heredoc); // supprimer l'ancien fichier temporaire s'il existe
-		free(mini->cmd[i].temp_heredoc); // free l'ancien nom de fichier temporaire
-		mini->cmd[i].temp_heredoc = NULL; // reinitialiser a NULL
-	}
-	temp_index = ft_itoa(i); // convertir l'index i en string pour nommer l'index du fichier temporaire
-	if (!temp_index)
-	{
-		// mini->cmd[i].in_fail = 1;
-		perror("malloc: temp index");
+	if (n < 0 || n >= mini->cmd[j].compter_heredoc) // si n est invalide (ex. n = 2 alors que compter_heredoc = 2, donc les index valides sont 0 et 1)
 		return (-1);
-	}
-	mini->cmd[i].temp_heredoc = ft_strjoin("temp_", temp_index); // construire nom du fichier temporaire pour heredoc: temp_i
-	free(temp_index); // liberer temp_index apres utilisation
-	if (!mini->cmd[i].temp_heredoc) // si echec de malloc pour le nom du fichier temporaire
+	if (mini->cmd[j].temp_heredoc && mini->cmd[j].temp_heredoc[n]) // si un ancien fichier temporaire existe deja pour ce heredoc[n], on le supprime
 	{
-		// mini->cmd[i].in_fail = 1;
-		perror("malloc: temp heredoc name");
-		return (-1);
+		unlink(mini->cmd[j].temp_heredoc[n]); // supprimer l'ancien fichier temporaire s'il existe
+		free(mini->cmd[j].temp_heredoc[n]); // free l'ancien nom de fichier temporaire
+		mini->cmd[j].temp_heredoc[n] = NULL; // reinitialiser a NULL
 	}
-	if (access(mini->cmd[i].temp_heredoc, F_OK) == 0 && unlink(mini->cmd[i].temp_heredoc) == -1) // si le fichier mini->cmd[i].temp_heredoc existe deja
-		perror("unlink temp heredoc"); // supprimer le fichier existant
+	index_char = ft_itoa(j); // convertir l'index j en string pour nommer l'index du fichier temporaire (temp_j)
+	if (!index_char)
+		return (perror("index j (itoa)"), -1);
+	temp_j = ft_strjoin("temp_", index_char); // construire le nom du fichier temporaire pour heredoc: temp_j
+	free(index_char); // liberer index_char apres utilisation
+	if (!temp_j) // si echec de malloc pour le nom du fichier temporaire
+		return (perror("strjoin: temp_ + j"), -1);
+	tiret_bas = ft_strjoin(temp_j, "_"); // ajouter un tiret bas entre temp_j et n pour le nom du fichier temporaire (temp_j_n)
+	free(temp_j); // liberer temp_j apres utilisation
+	if (!tiret_bas)
+		return (perror("strjoin: temp_j + _"), -1);
+	index_char = ft_itoa(n); // l'index n en char pour le fichier temporaire (temp_j_n)
+	if (!index_char)
+		return (perror("itoa index n"), free(tiret_bas), -1);
+	temp_j_n = ft_strjoin(tiret_bas, index_char); // construire le nom du fichier temporaire pour heredoc: temp_j_n
+	free(tiret_bas); // liberer temp_j apres utilisation
+	free(index_char); // liberer index_char apres utilisation
+	if (!temp_j_n) // si echec de malloc pour le nom du fichier temporaire
+		return (perror("malloc: file name j n"), -1);
+	mini->cmd[j].temp_heredoc[n] = temp_j_n; // assigner le nom du fichier temporaire a mini->cmd[j].temp_heredoc
+	if (access(mini->cmd[j].temp_heredoc[n], F_OK) == 0) // si le fichier mini->cmd[j].temp_heredoc existe deja
+		unlink(mini->cmd[j].temp_heredoc[n]); // supprimer le fichier existant
 	return (0);
 }
 
@@ -1368,78 +1387,92 @@ void	init_signaux(void)
 	signal(SIGQUIT, SIG_IGN);
 }
 
-// appliquer heredoc pour la commande i
-int	appliquer_heredoc_cmd(t_mini *mini, int i)
+// appliquer heredoc pour la commande j
+int	appliquer_heredoc_cmd(t_mini *mini, int j)
 {
 	int	status; // pour waitpid (si le processus enfant s'est termine correctement)
 	int	exit_status; // pour resultat du waitpid (code de sortie du processus enfant)
 	int	exit_signal;
+	int	n;
 
-	if (preparer_temp_file_name(mini, i) == -1)
-	{
-		mini->cmd[i].in_fail = 1;
-		mini->exit_status = 1;
+	n = 0;
+	if (!mini || j < 0 || j >= mini->nbr_cmd) // si mini n'existe pas, index i est invalide
 		return (-1);
-	}
+	if (mini->cmd[j].compter_heredoc <= 0) // si il n'y a pas de heredoc pour cette cmd, on ne fait rien
+		return (0);
+
 	signal(SIGINT, SIG_IGN); // le processus parent ignore ctrl+C pendant le processus enfant (heredoc fork)
 	signal(SIGQUIT, SIG_IGN);
-	mini->cmd[i].pid_heredoc = fork(); // creer un processus enfant pour gerer heredoc
-	if (mini->cmd[i].pid_heredoc == -1) // si echec de fork
+
+	while (n < mini->cmd[j].compter_heredoc) // pour chaque heredoc de cette cmd, on prepare le nom du fichier temporaire
 	{
-		init_signaux();
-		mini->cmd[i].in_fail = 1;
-		mini->exit_status = 1;
-		return (-1); // si echec de waitpid
-	}
-	if (mini->cmd[i].pid_heredoc == 0) // processus enfant
-		appliquer_heredoc_enfant(mini, i);
-	if (waitpid(mini->cmd[i].pid_heredoc, &status, 0) == -1) // attendre la fin du processus enfant
-	{
-		init_signaux();
-		mini->cmd[i].in_fail = 1;
-		mini->exit_status = 1;
-		return (-1); // si echec de waitpid
-	}
-	init_signaux(); // apres la fin du processus enfant, on applique des signaux pareils que shell
-	if (WIFSIGNALED(status))
-	{
-		exit_signal = WTERMSIG(status);
-		mini->cmd[i].in_fail = 1;
-		mini->exit_status = 128 + exit_signal;
-		return (-1);
-	}
-	else if (WIFEXITED(status)) // si le processus enfant s'est termine correctement
-	{
-		exit_status = WEXITSTATUS(status); // recuperer le code de sortie
-		if (exit_status != 0) // si le code de sortie n'est pas 0 (erreur dans heredoc)
+		if (preparer_temp_file_name(mini, j, n) == -1)
 		{
-			mini->cmd[i].in_fail = 1; // marquer l'echec de heredoc
-			mini->exit_status = exit_status; // mettre a jour le code de sortie global
-			return (-1); // retourner -1 pour indiquer l'erreur
+			init_signaux(); // reinitialiser les signaux avant de retourner
+			mini->cmd[j].in_fail = 1;
+			mini->exit_status = 1;
+			return (-1);
 		}
+		mini->cmd[j].pid_heredoc = fork(); // creer un processus enfant pour gerer heredoc
+		if (mini->cmd[j].pid_heredoc == -1) // si echec de fork
+		{
+			init_signaux();
+			mini->cmd[j].in_fail = 1;
+			mini->exit_status = 1;
+			return (-1); // si echec de waitpid
+		}
+		if (mini->cmd[j].pid_heredoc == 0) // processus enfant
+			appliquer_heredoc_enfant(mini, j, n);
+		if (waitpid(mini->cmd[j].pid_heredoc, &status, 0) == -1) // attendre la fin du processus enfant
+		{
+			init_signaux();
+			mini->cmd[j].in_fail = 1;
+			mini->exit_status = 1;
+			return (-1); // si echec de waitpid
+		}
+		init_signaux(); // apres la fin du processus enfant, on applique des signaux pareils que shell
+		if (WIFSIGNALED(status))
+		{
+			exit_signal = WTERMSIG(status);
+			mini->cmd[j].in_fail = 1;
+			mini->exit_status = 128 + exit_signal;
+			return (-1);
+		}
+		else if (WIFEXITED(status)) // si le processus enfant s'est termine correctement
+		{
+			exit_status = WEXITSTATUS(status); // recuperer le code de sortie
+			if (exit_status != 0) // si le code de sortie n'est pas 0 (erreur dans heredoc)
+			{
+				mini->cmd[j].in_fail = 1; // marquer l'echec de heredoc
+				mini->exit_status = exit_status; // mettre a jour le code de sortie global
+				return (-1); // retourner -1 pour indiquer l'erreur
+			}
+		}
+		else // si le processus enfant ne s'est pas termine correctement
+		{
+			mini->cmd[j].in_fail = 1; // marquer l'echec de heredoc
+			mini->exit_status = 1; // mettre a jour le code de sortie global
+			return (-1);
+		}
+		if (!mini->cmd[j].temp_heredoc && !mini->cmd[j].temp_heredoc[n]) // proteger au cas ou temp_heredoc est NULL
+		{
+			mini->cmd[j].in_fail = 1;
+			mini->exit_status = 1;
+			return (-1);
+		}
+		n++;
 	}
-	else // si le processus enfant ne s'est pas termine correctement
+	if (mini->cmd[j].fd_in != -1) // si fd_in est deja ouvert, on le ferme d'abord
+		close(mini->cmd[j].fd_in); // fermer l'ancien fd_in avant de le remplacer
+	mini->cmd[j].fd_in = open(mini->cmd[j].temp_heredoc[mini->cmd[j].compter_heredoc - 1], O_RDONLY); // reouvrir le fichier temp en lecture seule
+	if (mini->cmd[j].fd_in == -1) // si echec d'ouverture de temp en lecture
 	{
-		mini->cmd[i].in_fail = 1; // marquer l'echec de heredoc
-		mini->exit_status = 1; // mettre a jour le code de sortie global
-		return (-1);
-	}
-	if (!mini->cmd[i].temp_heredoc) // proteger au cas ou temp_heredoc est NULL
-	{
-		mini->cmd[i].in_fail = 1;
-		mini->exit_status = 1;
-		return (-1);
-	}
-	if (mini->cmd[i].fd_in != -1) // si fd_in est deja ouvert, on le ferme d'abord
-		close(mini->cmd[i].fd_in); // fermer l'ancien fd_in avant de le remplacer
-	mini->cmd[i].fd_in = open(mini->cmd[i].temp_heredoc, O_RDONLY); // reouvrir le fichier temp en lecture seule
-	if (mini->cmd[i].fd_in == -1) // si echec d'ouverture de temp en lecture
-	{
-		mini->cmd[i].in_fail = 1;
+		mini->cmd[j].in_fail = 1;
 		mini->exit_status = 1;
 		perror("open temp for reading"); // afficher l'erreur
 		return (-1);
 	}
+	init_signaux(); // reinitialiser les signaux avant de retourner
 	return (0);
 }
 

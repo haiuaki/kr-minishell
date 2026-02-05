@@ -87,7 +87,7 @@ typedef struct s_cmd
 	// char	*temp_heredoc; // fichier temporaire pour heredoc
 
 	// int		out_append; // 1 si redirection en mode append (>>), 0 sinon
-	// int		heredoc; // 1 si redirection heredoc (<<), 0 sinon
+	int		heredoc; // 1 si redirection heredoc (<<), 0 sinon
 
 	// char	*limiter; // limiteur pour heredoc
 
@@ -210,7 +210,7 @@ void	process_out_redir(t_mini *mini, int i); // proceder a la redirection de sor
 int		appliquer_infile(t_mini *mini, int i); // appliquer la redirection infile (<) pour la commande i
 
 // heredoc
-int		preparer_temp_file_name(t_mini *mini, int i);
+int	preparer_temp_file_name(t_mini *mini, int j, int n);
 // void	preparer_temp_file(t_mini *mini, int i); // Préparation du fichier temporaire pour heredoc
 int		collecter_heredoc_lines(int fd, char *delimiter); // recuperer les lignes de heredoc, puis les stocker dans le fichier temp
 void	appliquer_heredoc_enfant(t_mini *mini, int i); // appliquer heredoc dans le processus enfant
