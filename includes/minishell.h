@@ -77,15 +77,19 @@ typedef struct s_cmd
 	// char	*infile; // fichier de redirection entree (<)
 	// char	*outfile; // fichier de redirection sortie (>)
 
+	// cmd[j].out_append *********************************************************
+	// cmd[j].heredoc ***********************************************************
 	// heredoc
-	// char	**temp_heredoc; // tableau des fichiers temporaires pour heredoc
+	char	**temp_heredoc; // tableau des fichiers temporaires pour heredoc
+	char	**limiter; // tableau des limiters (sauvegarder pls limiters)
+	int		compter_heredoc; // le nombre de heredoc
 
-	char	*temp_heredoc; // fichier temporaire pour heredoc
+	// char	*temp_heredoc; // fichier temporaire pour heredoc
 
 	// int		out_append; // 1 si redirection en mode append (>>), 0 sinon
-	int		heredoc; // 1 si redirection heredoc (<<), 0 sinon
+	// int		heredoc; // 1 si redirection heredoc (<<), 0 sinon
 
-	char	*limiter; // limiteur pour heredoc
+	// char	*limiter; // limiteur pour heredoc
 
 	pid_t	pid_heredoc; // pid du processus heredoc
 	// resultat des fd
@@ -160,7 +164,7 @@ int		len_mot_avant_quote(char *line); // recuperer len avant la quote qui est au
 int		len_mot_2_quotes_entier(char *line); // compter le nombre de caracteres entre 2 quotes, y compris les 2 quotes
 int		len_mot_apres_quote(char *line); // recuperer len apres la 2e quote
 int		len_tab_char(char **tab); // compter le nombre de chaines dans un double tableau
-int		len_tab_int(int *tab); // compter le nombre d'elements dans un tableau int*
+// int		len_tab_int(int *tab); // compter le nombre d'elements dans un tableau int*
 
 // pas de quote dans la chaine
 int		len_mot_sans_quote(char *line); // compter le nombre de caracteres s'il y a pas de 2 quotes qui fonctionnent
@@ -176,8 +180,8 @@ void	free_tokens(t_token **token); // liste free
 
 int 	count_pipe(t_token *token); // compter le nombre de pipes dans la liste chainee
 t_cmd	*malloc_cmd(t_token *token); // alluer la liste chainee cmd (divisee par pipe)
-char**	add_double_tab_char(char **tab, char *str, int size); // agrandir un tableau et rajouter une chaine
-int		*add_double_tab_int(int *tab, int val); // agrandir un tableau int et rajouter une valeur int
+char	**add_double_tab_char(char **tab, char *str, int size); // agrandir un tableau et rajouter une chaine
+int		*add_double_tab_int(int *tab, int val, int size); // agrandir un tableau int et rajouter une valeur int
 int 	add_cmd(t_token *token, t_cmd *cmd); // parcours les token, et rajoute les token dans les tableaux
 int		decouper_cmd_par_pipe(t_token *token, t_cmd **cmd);
 

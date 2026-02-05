@@ -435,7 +435,7 @@ int	len_mot_total(char *line)
 			len = len_mot_sans_quote(line);
 	}
 	// 2. le cas ou le premier caractere ne commence pas par une quote (mais pas redir, ni pipe non plus)
-	else if (line[0] != '"' && line[0] != '\'')
+	else if (line[0] != '"' || line[0] != '\'')
 	{
 		// 2-1.  1) quote au milieu   2) 2 quotes bien fermees   3) apres quote ' ' ou redir ou pipe
 		if (check_quote_milieu_ok(line) == 1 && check_avant_quote_espace(line) == 0 && check_2_quotes_milieu_puis_fin(line) == 1)
@@ -486,7 +486,7 @@ int	check_pipe_fin(char *line)
 // compter le nombre de pipes dans la liste chainee
 int count_pipe(t_token *token)
 {
-	int		count;
+	int			count;
 	t_token	*temp; // temporaire pour parcourir liste chainee token
 
 	count = 0;
@@ -524,18 +524,18 @@ t_cmd	*malloc_cmd(t_token *token)
 		cmd[j].infile = NULL; // liste des fichiers pour  < (char **, termine par NULL)
 		cmd[j].outfile = NULL; // liste des fichiers pour > et >> (char **, termine par NULL)
 
-		cmd[j].temp_heredoc = NULL; // tableau (char **) des noms de fichiers temporaire pour heredoc (qui termine par NULL)
-		cmd[j].limiter = NULL; // tableau (char **) des limiters pour heredoc (qui termine par NULL)
-		cmd[j].compter_heredoc = 0; // pour compter le nombre de heredoc (<<) dans chaque commande
-
 		// out_append[j] correspond a outfile[j]: 1 pour >> (append), 0 pour > (truncate)
-		cmd[j].out_append = NULL; // initialiser a NULL pour proteger
-		// NULL au debut: on alloue et agrandit au fur et a mesure dans add_cmd()
-		// cf) out_append[n] = 1 pour >> (append),  0 pour > (truncate)
+		cmd[j].out_append = malloc(sizeof(int) * 1);
+		if (!cmd[j].out_append)
+			return (NULL);
+		cmd[j].out_append[0] = -1; // initialiser a -1 pour proteger
+		// vu que la valeur de out_append sera soit 1 soit 0, on peut utiliser -1 (qu'on n'utilise pas pour la valeur) pour proteger
+		// ca marquera la fin du tableau int
+		// ex) out_append = {0,1,-1}  (pour 2 fichiers de sortie)
 
-		// cmd[j].temp_heredoc = NULL; // pour heredoc
-		// cmd[j].heredoc = 0; // <<
-		// cmd[j].limiter = NULL; // pour heredoc
+		cmd[j].temp_heredoc = NULL; // pour heredoc
+		cmd[j].heredoc = 0; // <<
+		cmd[j].limiter = NULL; // pour heredoc
 		cmd[j].pid_heredoc = -1; // pid pour heredoc (fork)
 		cmd[j].fd_in = -1;
 		cmd[j].fd_out = -1;
@@ -559,31 +559,31 @@ int	len_tab_char(char **tab)
 	return (j);
 }
 
-// // compter le nombre d'elements dans un tableau int*
-// int	len_tab_int(int *tab)
-// {
-// 	int	j;
+// compter le nombre d'elements dans un tableau int*
+int	len_tab_int(int *tab)
+{
+	int	j;
 
-// 	j = 0;
-// 	if (!tab)
-// 		return (0);
-// 	while (tab[j] != NULL) // on utilise -1 pour marquer la fin du tableau int
-// 		j++;
-// 	return (j);
-// }
+	j = 0;
+	if (!tab)
+		return (0);
+	while (tab[j] != -1) // on utilise -1 pour marquer la fin du tableau int
+		j++;
+	return (j);
+}
 
 // fonction pour agrandir un tableau et rajouter une valeur int (1 ou 0), comme pour out_append
-int	*add_double_tab_int(int *tab, int val, int size)
+// tab termine par -1,  size = nombre de valeurs avant -1
+int	*add_double_tab_int(int *tab, int val)
 {
 	int *new_tab; // nouveau tableau agrandi
 	int j; // index pour parcourir les tableaux
-	// int size; // taille actuelle du tableau int
+	int size; // taille actuelle du tableau int
 
-	// size = len_tab_char(tab); // compter le nombre d'elements dans le tableau char
+	size = len_tab_int(tab); // compter le nombre d'elements dans le tableau int
 	if (!tab && size > 0) // proteger au cas ou tab est NULL mais size > 0
 			return (NULL);
-	new_tab = malloc(sizeof(int) * (size + 1)); // +1 pour le nouveau 
-	// cf) int *tab n'a pas besoin d'ajouter '\0' a la fin 
+	new_tab = malloc(sizeof(int) * (size + 2)); // +1 pour le nouveau +1 pour -1
 	if (!new_tab)
 			return (NULL);
 	j = 0;
@@ -593,6 +593,7 @@ int	*add_double_tab_int(int *tab, int val, int size)
 			j++;
 	}
 	new_tab[j] = val; // ajouter la nouvelle valeur (1 ou 0)
+	new_tab[j + 1] = -1; // terminer par -1
 	free(tab); // vu qu'on a bien cree un nouveau tableau agrandi, on libere l'ancien tableau
 	return (new_tab);
 }
@@ -686,6 +687,9 @@ int add_cmd(t_token *token, t_cmd *cmd)
 			cmd[index_cmd].infile = add_double_tab_char(cmd[index_cmd].infile, file_temp, size_file_tab); // agrandir le tableau infile pour ajouter le nouveau fichier
 			if (!cmd[index_cmd].infile)
 				return (-1);
+			cmd[index_cmd].in_heredoc = add_double_tab_int(cmd[index_cmd].in_heredoc, 0); // marquer que cette structure n'a pas heredoc (0)
+			if (!cmd[index_cmd].in_heredoc)
+				return (-1);
 			// ex) cat < file1 < file2  -> infile = {"file1", "file2", NULL}
 			// on n'ecrase plus, on stocke tout dans l'ordre
 		}
@@ -698,8 +702,8 @@ int add_cmd(t_token *token, t_cmd *cmd)
 			cmd[index_cmd].outfile = add_double_tab_char(cmd[index_cmd].outfile, file_temp, size_file_tab); // agrandir le tableau outfile pour ajouter le nouveau fichier
 			if (!cmd[index_cmd].outfile)
 				return (-1);
-			cmd[index_cmd].out_append = add_double_tab_int(cmd[index_cmd].out_append, 0, size_file_tab);
-			// agrandir le tableau out_append pour ajouter 0 (truncate) <- puisqu'on est dans la condition T_FD_OUT >
+			// size_mode_tab = len_tab_int(cmd[index_cmd].out_append); // compter la taille actuelle du tableau out_append
+			cmd[index_cmd].out_append = add_double_tab_int(cmd[index_cmd].out_append, 0); // agrandir le tableau out_append pour ajouter 0 (truncate) <- puisqu'on est dans la condition T_FD_OUT >
 			// 0='>' (truncate), 1='>>' (append)
 			if (!cmd[index_cmd].out_append)
 				return (-1);
@@ -713,18 +717,24 @@ int add_cmd(t_token *token, t_cmd *cmd)
 			cmd[index_cmd].outfile = add_double_tab_char(cmd[index_cmd].outfile, file_temp, size_file_tab); // agrandir le tableau outfile pour ajouter le nouveau fichier
 			if (!cmd[index_cmd].outfile)
 				return (-1);
-			cmd[index_cmd].out_append = add_double_tab_int(cmd[index_cmd].out_append, 1, size_file_tab); // agrandir le tableau out_append pour ajouter 1 (append) <- puisqu'on est dans la condition T_FD_OUT_APPEND >>
+			// size_mode_tab = len_tab_int(cmd[index_cmd].out_append); // compter la taille actuelle du tableau out_append
+			cmd[index_cmd].out_append = add_double_tab_int(cmd[index_cmd].out_append, 1); // agrandir le tableau out_append pour ajouter 1 (append) <- puisqu'on est dans la condition T_FD_OUT_APPEND >>
 			// 0='>' (truncate), 1='>>' (append)
 			if (!cmd[index_cmd].out_append)
 				return (-1);
 		}
 		else if (token->type_token == T_FD_HEREDOC)
 		{
-			if (cmd[index_cmd].limiter)
-				free(cmd[index_cmd].limiter);
-			cmd[index_cmd].limiter = ft_strdup(token->str); // on ajoute le limiter pour heredoc (<<)  
-			// ex) << EOF  -> limiter = "EOF"
-			cmd[index_cmd].heredoc = 1; // marquer que c'est heredoc (<<)
+			file_temp = ft_strdup(token->str); // dupliquer le nom du fichier (redirection <<) pour stocker dans cmd
+			if (!file_temp)
+				return (-1);
+			size_file_tab = len_tab_char(cmd[index_cmd].infile); // compter la taille actuelle du tableau infile (on stocke heredoc dans infile pour reutiliser lors de l'execution)
+			cmd[index_cmd].infile = add_double_tab_char(cmd[index_cmd].infile, file_temp, size_file_tab); // agrandir le tableau infile pour ajouter le nouveau "fichier" (limiter de heredoc)
+			if (!cmd[index_cmd].infile)
+				return (-1);
+			cmd[index_cmd].in_heredoc = add_double_tab_int(cmd[index_cmd].in_heredoc, 1); // marquer que cette structure a heredoc (<<)
+			if (!cmd[index_cmd].in_heredoc)
+				return (-1);
 		}
 		if (token->type_token == T_PIPE) // si on arrive a '|'
 		{
@@ -781,12 +791,12 @@ void test_print_cmds(t_cmd *cmd, int nbr_cmd)
 				printf("arg %d: %s\n", j, cmd[j].cmd[i]);
 				i++;
 			}
-			j++;
+			
 			i = 0;
 		}
+		j++;
 	}
 }
-
 
 
 // On parse tout pour trouver les operations ou les builtins
@@ -856,9 +866,7 @@ int parse_input(char *line, t_token **token, t_mini *mini)
 	}
 	if (fd_type != (t_type_token) - 1)
 		return (write(2, "syntax error near unexpected token `newline'\n", 45), -2);
-	if (appliquer_dollar_sur_liste_token(token, mini) == -1) // appliquer dollar en respectant a quotes
-		return (-1);
-	if (appliquer_quote_sur_liste_token(token) == -1) // apres l'expansion de dollar, on supprime quote
+	if (appliquer_dollar_sur_liste_token(token, mini) == -1)
 		return (-1);
 	return (0);
 }
@@ -1067,10 +1075,7 @@ int	appliquer_dollar_sur_liste_token(t_token **token, t_mini *mini)
 	temp = *token;
 	while (temp) // parcourir toute la liste chainee token
 	{
-		if (temp->type_token == T_MOT || temp->type_token == T_FD_IN
-			|| temp->type_token == T_FD_OUT || temp->type_token == T_FD_OUT_APPEND)
-			// si le type de token est T_MOT et redir -> on applique le remplacement de $
-			// heredoc a faire apres ***********************************************************
+		if (temp->type_token == T_MOT) // si le type de token est T_MOT
 		{
 			if (!temp->str) // si str est NULL, on retourne -1 (erreur)
 				return (-1);
@@ -1085,172 +1090,7 @@ int	appliquer_dollar_sur_liste_token(t_token **token, t_mini *mini)
 	return (0);
 }
 
-// enlever les quotes dans un token str
-char	*enlever_quote_dans_token(char *str)
-{
-	int	i; // index pour parcourir str
-	int	n; // index pour parcourir resultat (nouveau str sans quotes)
-	int	s_quote; // entree dans single quote ou pas (1 = dans single quote, 0 sinon)
-	int	d_quote; // entree dans double quote ou pas (1 = dans double quote, 0 sinon)
-	char	*resultat; // le nouveau str sans quotes
 
-	i = 0;
-	n = 0;
-	s_quote = 0; // pour gerer le cas de dans single quote (1 = dans single quote, 0 sinon)
-	d_quote = 0; // pour gerer le cas de double quote (1 = dans double quote, 0 sinon)
-	if (!str)
-		return (NULL);
-	resultat = malloc(sizeof(char) * (ft_strlen(str) + 1)); // resultat ne peut pas etre plus long que str (puisqu'on va juste enlever les quotes)
-	// donc on alloue la taille de str + 1 pour le '\0'
-	if (!resultat)
-		return (NULL);
-	i = 0;
-	while (str[i])
-	{
-		if (str[i] == '\'' && !d_quote) // gerer le cas de single quote au debut
-		{
-			s_quote = !s_quote; // on inverse l'etat de s_quote (0 -> 1 , 1 -> 0)
-			i++; // on saute le caractere quote
-			continue ; // on passe au caractere suivant
-		}
-		if (str[i] == '"' && !s_quote) // gerer le cas de double quote au debut
-		{
-			d_quote = !d_quote; // on inverse l'etat de d_quote (0 -> 1 , 1 -> 0)
-			i++; // on saute le caractere quote
-			continue ; // on passe au caractere suivant
-		}
-		resultat[n++] = str[i++]; // on copie le caractere dans resultat et on avance les index
-		// c'est pareil que resulat[n] = str[i]; n++; i++; hihi j'ai appris
-		// ex) you"pi'i'i" -> youpii
-	}
-	resultat[n] = '\0'; // terminer resultat par '\0'
-	if (s_quote || d_quote) // si on a une quote non fermee, on retourne NULL (erreur de syntaxe)
-		return (free(resultat), NULL);
-	return (resultat); // retourner le nouveau str sans quotes
-}
-
-// enlever des quotes pour chaque token de type T_MOT et fd redir
-int	appliquer_quote_sur_liste_token(t_token **token)
-{
-	char		*new_str; // le nouveau str apres enlever les quotes
-	t_token	*temp;
-
-	if (!token || !(*token)) // si token n'existe pas
-		return (-1);
-	temp = *token; // initialiser temp avec le debut de la liste chainee token
-	while (temp) // parcourir toute la liste chainee token
-	{
-		if (temp->str && (temp->type_token == T_MOT || temp->type_token == T_FD_IN
-			|| temp->type_token == T_FD_OUT || temp->type_token == T_FD_OUT_APPEND
-			|| temp->type_token == T_FD_HEREDOC))
-			// on enleve les quotes si le type de token est T_MOT ou redir
-		{
-			// printf("avant enlever quote: [%s]\n", temp->str);
-			new_str = enlever_quote_dans_token(temp->str); // enlever les quotes dans token->str
-			if (!new_str)
-				return (free_tokens(token), -1);
-			free(temp->str);
-			temp->str = new_str; // on met a jour token->str avec le nouveau str
-			// printf("apres enlever quote: [%s]\n", temp->str);
-		}
-		temp = temp->next; // passer au noeud suivant
-	}
-	return (0);
-}
-
-
-
-
-// ===================================== redirection ===================================== 
-// ======================================================================================= 
-
-
-
-// Passe la structure globale et l'index de la commande en argument
-// et applique la redirection de sortie en fonction du type (>, >>)
-void	process_out_redir(t_mini *mini, int i)
-{
-	int	n; // index pour parcourir outfile
-	int	type_redir; // type de redirection pour le fichier (1 = append, 0 = truncate)
-	int	fd_temp; // fd temporaire pour ouvrir le fichier par mesure de precaution
-
-	n = 0;
-	type_redir = 0; // > par defaut
-	fd_temp = -1;
-	if (!mini || i < 0 || i >= mini->nbr_cmd) // si mini n'existe pas, index i est invalide
-		return ;
-	if (!mini->cmd || !mini->cmd[i].outfile) // si cmd n'existe pas ou outfile est NULL
-		return ;
-	if (mini->cmd[i].out_fail || mini->cmd[i].in_fail) // si deja echec de redir in ou out, on ne fait rien
-		return ;
-	while (mini->cmd[i].outfile[n]) // pour chaque fichier de redirection outfile
-	{
-		type_redir = 0; // a chaque iteration de outfile[n], type_redir commence toujours par 0 (> par defaut)
-		fd_temp = -1; // on initialise a nouveau le fd temporaire a chaque iteration
-		// si un tableau out_append existe, on recupere le type de redir associe a ce fichier
-		// out_append[n] correspond a outfile[n] (0 est >, 1 est >>)
-		if (!mini->cmd[i].out_append)
-			type_redir = 0; // s'il y a un probleme, 0 par defaut
-		else
-			type_redir = mini->cmd[i].out_append[n];
-		if (type_redir == 1) // si out_append == 1, c'est une redirection en mode append (>>)
-			fd_temp = open(mini->cmd[i].outfile[n], O_WRONLY | O_APPEND | O_CREAT, 0644);
-		else // si out_append == 0, c'est une redirection simple (>)
-			fd_temp = open(mini->cmd[i].outfile[n], O_WRONLY | O_TRUNC | O_CREAT, 0644);
-		if (fd_temp < 0)
-		{
-			perror(mini->cmd[i].outfile[n]); // afficher l'erreur
-			mini->exit_status = 1; // mettre le code de sortie a 1
-			mini->cmd[i].out_fail = 1; // marquer que l'ouverture a echoue
-			return ;
-		}
-		if (mini->cmd[i].fd_out != -1) // si un ancien fichier out existe,
-			close(mini->cmd[i].fd_out); // on le ferme avant de le remplacer
-		mini->cmd[i].fd_out = fd_temp; // puis on en ajoute le nouveau
-		// ce fichier devient la sortie active (le dernier redir qui va s'effectuer)
-		n++;
-	}
-}
-
-// appliquer la redirection infile (<) pour la commande i
-int	appliquer_infile(t_mini *mini, int i)
-{
-	int	n;
-	int	fd_temp;
-
-	n = 0;
-	fd_temp = -1;
-	if (!mini || i < 0 || i >= mini->nbr_cmd) // si mini n'existe pas, index i est invalide
-		return (-1);
-	if (!mini->cmd) // si cmd n'existe pas
-		return (-1);
-	if (mini->cmd[i].in_fail || mini->cmd[i].out_fail) // si deja echec de redir in ou out, on ne fait rien
-		return (0);
-	if (mini->cmd[i].infile == NULL) // proteger au cas ou infile est NULL
-	{
-		mini->exit_status = 2;
-		return (-1);
-	}
-	while (mini->cmd[i].infile[n]) // pour chaque fichier de redirection infile
-	{
-		fd_temp = open(mini->cmd[i].infile[n], O_RDONLY);
-		// a chaque iteration de infile[n], ouvrir le fichier en lecture seule dans un fd temporaire
-		if (fd_temp < 0) // si echec d'ouverture
-		{
-			perror(mini->cmd[i].infile[n]); // afficher l'erreur
-			mini->exit_status = 1; // mettre le code de sortie a 1
-			mini->cmd[i].fd_in = -1; // marquer que l'ouverture a echoue
-			mini->cmd[i].in_fail = 1; // marquer que l'ouverture a echoue
-			return (-1);
-		}
-		if (mini->cmd[i].fd_in != -1) // si un ancien fichier in existe,
-			close(mini->cmd[i].fd_in); // on le ferme avant de le remplacer
-		mini->cmd[i].fd_in = fd_temp; // reinitialiser fd_in
-		// ce fichier devient l'entree active (le dernier redir qui va s'effectuer)
-		n++;
-	}
-	return (0);
-}
 
 // Préparation du nom de fichier temporaire pour heredoc
 int	preparer_temp_file_name(t_mini *mini, int i)
@@ -1325,7 +1165,7 @@ int	collecter_heredoc_lines(int fd, char *delimiter)
 }
 
 // appliquer heredoc dans le processus enfant
-void	appliquer_heredoc_enfant(t_mini *mini, int i)
+void	appliquer_heredoc_enfant(t_mini *mini, int i, int n)
 {
 	int	resultat;
 	int	fd_temp;
@@ -1341,12 +1181,12 @@ void	appliquer_heredoc_enfant(t_mini *mini, int i)
 		perror("open temp");
 		exit (1);
 	}
-	resultat = collecter_heredoc_lines(fd_temp, mini->cmd[i].limiter);
+	resultat = collecter_heredoc_lines(fd_temp, mini->cmd[i].infile[n]); // collecter les lignes de heredoc et les stocker dans le fichier temp
 	// collecter des lignes heredoc dans le fichier temp
 	// (lire des lignes jusqu'a ce qu'on arrive limiter, puis les ecrire dans le fichier temp)
 	if (resultat == 1) // ctrl-D
 	{
-		print_heredoc_warning_ctrl_d(mini->cmd[i].limiter);
+		print_heredoc_warning_ctrl_d(mini->cmd[i].infile[n]);
 		close(fd_temp);
 		exit (0);
 	}
@@ -1369,7 +1209,7 @@ void	init_signaux(void)
 }
 
 // appliquer heredoc pour la commande i
-int	appliquer_heredoc_cmd(t_mini *mini, int i)
+int	appliquer_heredoc_cmd(t_mini *mini, int i, int n)
 {
 	int	status; // pour waitpid (si le processus enfant s'est termine correctement)
 	int	exit_status; // pour resultat du waitpid (code de sortie du processus enfant)
@@ -1392,7 +1232,7 @@ int	appliquer_heredoc_cmd(t_mini *mini, int i)
 		return (-1); // si echec de waitpid
 	}
 	if (mini->cmd[i].pid_heredoc == 0) // processus enfant
-		appliquer_heredoc_enfant(mini, i);
+		appliquer_heredoc_enfant(mini, i, n);
 	if (waitpid(mini->cmd[i].pid_heredoc, &status, 0) == -1) // attendre la fin du processus enfant
 	{
 		init_signaux();
@@ -1470,6 +1310,114 @@ static void	print_preview_path(const char *path)
 	close(fd);
 }
 
+// ===================================== redirection ===================================== 
+// ======================================================================================= 
+
+
+
+// Passe la structure globale et l'index de la commande en argument
+// et applique la redirection de sortie en fonction du type (>, >>)
+void	process_out_redir(t_mini *mini, int i)
+{
+	int	n; // index pour parcourir outfile
+	int	type_redir; // type de redirection pour le fichier (1 = append, 0 = truncate)
+	int	fd_temp; // fd temporaire pour ouvrir le fichier par mesure de precaution
+
+	n = 0;
+	type_redir = 0; // > par defaut
+	fd_temp = -1;
+	if (!mini || i < 0 || i >= mini->nbr_cmd) // si mini n'existe pas, index i est invalide
+		return ;
+	if (!mini->cmd || !mini->cmd[i].outfile) // si cmd n'existe pas ou outfile est NULL
+		return ;
+	if (mini->cmd[i].out_fail || mini->cmd[i].in_fail) // si deja echec de redir in ou out, on ne fait rien
+		return ;
+	while (mini->cmd[i].outfile[n]) // pour chaque fichier de redirection outfile
+	{
+		type_redir = 0; // a chaque iteration de outfile[n], type_redir commence toujours par 0 (> par defaut)
+		fd_temp = -1; // on initialise a nouveau le fd temporaire a chaque iteration
+		// si un tableau out_append existe, on recupere le type de redir associe a ce fichier
+		// out_append[n] correspond a outfile[n]
+		// -1 signifie que c'est pas defini, donc on garde d'abord le type de redir par defaut (>)
+		if (mini->cmd[i].out_append && mini->cmd[i].out_append[n] != -1)
+			type_redir = mini->cmd[i].out_append[n];
+		if (type_redir == 1) // si out_append == 1, c'est une redirection en mode append (>>)
+			fd_temp = open(mini->cmd[i].outfile[n], O_WRONLY | O_APPEND | O_CREAT, 0644);
+		else // si out_append == 0, c'est une redirection simple (>)
+			fd_temp = open(mini->cmd[i].outfile[n], O_WRONLY | O_TRUNC | O_CREAT, 0644);
+		if (fd_temp < 0)
+		{
+			perror(mini->cmd[i].outfile[n]); // afficher l'erreur
+			mini->exit_status = 1; // mettre le code de sortie a 1
+			mini->cmd[i].out_fail = 1; // marquer que l'ouverture a echoue
+			return ;
+		}
+		if (mini->cmd[i].fd_out != -1) // si un ancien fichier out existe,
+			close(mini->cmd[i].fd_out); // on le ferme avant de le remplacer
+		mini->cmd[i].fd_out = fd_temp; // puis on en ajoute le nouveau
+		// ce fichier devient la sortie active (le dernier redir qui va s'effectuer)
+		n++;
+	}
+}
+
+// appliquer la redirection infile (<) pour la commande i
+int	appliquer_infile(t_mini *mini, int i)
+{
+	int	n;
+	int	fd_temp;
+	int	type_redir;
+
+	n = 0;
+	fd_temp = -1;
+	if (!mini || i < 0 || i >= mini->nbr_cmd) // si mini n'existe pas, index i est invalide
+		return (-1);
+	if (!mini->cmd) // si cmd n'existe pas
+		return (-1);
+	if (mini->cmd[i].in_fail || mini->cmd[i].out_fail) // si deja echec de redir in ou out, on ne fait rien
+		return (0);
+	if (mini->cmd[i].infile == NULL) // proteger au cas ou infile est NULL
+	{
+		mini->exit_status = 2;
+		return (-1);
+	}
+	while (mini->cmd[i].infile[n]) // pour chaque fichier de redirection infile
+	{
+		if (mini->cmd[i].in_heredoc && mini->cmd[i].in_heredoc[n] != -1)
+			type_redir = mini->cmd[i].in_heredoc[n];
+		if (type_redir == 0)
+		{
+			fd_temp = open(mini->cmd[i].infile[n], O_RDONLY);
+			// a chaque iteration de infile[n], ouvrir le fichier en lecture seule dans un fd temporaire
+			if (fd_temp < 0) // si echec d'ouverture
+			{
+				perror(mini->cmd[i].infile[n]); // afficher l'erreur
+				mini->exit_status = 1; // mettre le code de sortie a 1
+				mini->cmd[i].fd_in = -1; // marquer que l'ouverture a echoue
+				mini->cmd[i].in_fail = 1; // marquer que l'ouverture a echoue
+				return (-1);
+			}
+			if (mini->cmd[i].fd_in != -1) // si un ancien fichier in existe,
+				close(mini->cmd[i].fd_in); // on le ferme avant de le remplacer
+			mini->cmd[i].fd_in = fd_temp; // reinitialiser fd_in
+			// ce fichier devient l'entree active (le dernier redir qui va s'effectuer)
+		}
+		else
+		{
+			if (appliquer_heredoc_cmd(mini, i, n) == -1)
+				printf("    heredoc: FAIL (exit_status=%d)\n", mini->exit_status);
+			else
+				printf("    heredoc: OK (fd_in=%d)\n", mini->cmd[i].fd_in);
+
+			// heredoc lire
+			if (!mini->cmd[i].in_fail && mini->cmd[i].temp_heredoc)
+				print_preview_path(mini->cmd[i].temp_heredoc);
+		}
+		n++;
+	}
+	return (0);
+}
+
+
 // ca aussi juste pour tester redir j'en ai maaaaaare
 void	test_redirs(t_mini *mini)
 {
@@ -1519,21 +1467,38 @@ void	test_redirs(t_mini *mini)
 			printf("(null)");
 		printf("\n");
 
-		// 1) heredoc
-		if (mini->cmd[i].heredoc)
-		{
-			if (appliquer_heredoc_cmd(mini, i) == -1)
-				printf("    heredoc: FAIL (exit_status=%d)\n", mini->exit_status);
-			else
-				printf("    heredoc: OK (fd_in=%d)\n", mini->cmd[i].fd_in);
+		// // 1) heredoc
+		// if (mini->cmd[i].heredoc)
+		// {
+		// 	if (appliquer_heredoc_cmd(mini, i) == -1)
+		// 		printf("    heredoc: FAIL (exit_status=%d)\n", mini->exit_status);
+		// 	else
+		// 		printf("    heredoc: OK (fd_in=%d)\n", mini->cmd[i].fd_in);
 
-			// heredoc lire
-			if (!mini->cmd[i].in_fail && mini->cmd[i].temp_heredoc)
-				print_preview_path(mini->cmd[i].temp_heredoc);
-		}
+		// 	// heredoc lire
+		// 	if (!mini->cmd[i].in_fail && mini->cmd[i].temp_heredoc)
+		// 		print_preview_path(mini->cmd[i].temp_heredoc);
+		// }
 
-		// 2) infile (s'il y a heredoc, on passe)
-		if (!mini->cmd[i].heredoc && mini->cmd[i].infile && mini->cmd[i].infile[0])
+		// // 2) infile (s'il y a heredoc, on passe)
+		// if (!mini->cmd[i].heredoc && mini->cmd[i].infile && mini->cmd[i].infile[0])
+		// {
+		// 	if (appliquer_infile(mini, i) == -1)
+		// 		printf("    infile: FAIL (exit_status=%d)\n", mini->exit_status);
+		// 	else
+		// 		printf("    infile: OK (fd_in=%d)\n", mini->cmd[i].fd_in);
+
+		// 	// infile: lire le dernier infile
+		// 	if (!mini->cmd[i].in_fail)
+		// 	{
+		// 		int last = 0;
+		// 		while (mini->cmd[i].infile[last])
+		// 			last++;
+		// 		if (last > 0)
+		// 			print_preview_path(mini->cmd[i].infile[last - 1]);
+		// 	}
+		// }
+		if (mini->cmd[i].infile)
 		{
 			if (appliquer_infile(mini, i) == -1)
 				printf("    infile: FAIL (exit_status=%d)\n", mini->exit_status);
@@ -1550,6 +1515,7 @@ void	test_redirs(t_mini *mini)
 					print_preview_path(mini->cmd[i].infile[last - 1]);
 			}
 		}
+
 
 		// 3) outfile
 		if (mini->cmd[i].outfile && mini->cmd[i].outfile[0])
@@ -1654,13 +1620,6 @@ int	main(int ac, char **av, char **env)
 		// printf("-----2wejwej---------------------\n");
 		test_print_cmds(cmd, count_pipe(parsing) + 1);
 		test_redirs(mini);
-		if (parse_input(line, &parsing, mini) < 0)
-		{
-			printf("Error: parse_input failed\n");
-			free_tokens(&parsing);
-			free(line);
-			continue ;
-		}
 		// free cmd a gerer ******************************
 		if (cmd)
 			free(cmd); // il faut ameliorer apres *************************
