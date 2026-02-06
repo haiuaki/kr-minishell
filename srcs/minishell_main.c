@@ -626,6 +626,8 @@ int add_cmd(t_token *token, t_cmd *cmd)
 	char	*mot_temp; // temporaire pour le mot
 	char	*file_temp; // temporaire pour le nom de fichier
 	int		size_file_tab; // pour compter la taille actuelle du tableau de fichiers (infile ou outfile) pour agrandir le tableau et ajouter un nouveau fichier
+	char	*limiter_sans_quote;
+	int		limiter_env;
 
 	index_cmd = 0;
 	i = 0;
@@ -634,6 +636,8 @@ int add_cmd(t_token *token, t_cmd *cmd)
 	mot_temp = NULL;
 	file_temp = NULL;
 	size_file_tab = 0;
+	limiter_sans_quote = 0;
+	limiter_env = 0;
 	while (token) // pendant que le noeud dans la liste chainee existe
 	{
 		if (token->type_token == T_MOT) // si le type de token est T_MOT
@@ -717,13 +721,26 @@ int add_cmd(t_token *token, t_cmd *cmd)
 		else if (token->type_token == T_FD_HEREDOC)
 		{
 			n = cmd[index_cmd].compter_heredoc; // n = nombre de heredoc deja existant pour cette commande
-			file_temp = ft_strdup(token->str); // dupliquer le limiter (<< limiter) pour stocker dans cmd[index_cmd].limiter[n]
-			if (!file_temp)
+
+			limiter_env = check_heredoc_env(token->str);
+			// memoriser pour chaque heredoc si l'expansion de l'env doit etre faite ou non
+			if (check_quote_limiter(token->str)) // enlever des quotos s'il y en a
+				limiter_sans_quote = enlever_quote_dans_token(token->str);
+			else
+				limiter_sans_quote = ft_strdup(token->str);
+			if (!limiter_sans_quote)
 				return (-1);
-			// size_file_tab = len_tab_char(cmd[index_cmd].limiter); // compter la taille actuelle du tableau limiter pour heredoc
-			cmd[index_cmd].limiter = add_double_tab_char(cmd[index_cmd].limiter, file_temp, n); // agrandir le tableau limiter pour ajouter le nouveau limiter
+
+			cmd[index_cmd].limiter = add_double_tab_char(cmd[index_cmd].limiter, limiter_sans_quote, n); 
+			// sauvegarder et agrandir le tableau limiter (sans quote) pour ajouter le nouveau limiter
 			if (!cmd[index_cmd].limiter)
 				return (-1);
+
+			cmd[index_cmd].hd_env = add_double_tab_int(cmd[index_cmd].hd_env, limiter_env, n);
+			// sauvegarder le type de l'expansion de l'env de chaque cas
+			if (!cmd[index_cmd].hd_env)
+				return (-1);
+
 			cmd[index_cmd].compter_heredoc++; // incrementer le nombre de heredoc pour cette commande
 			cmd[index_cmd].heredoc = 1; // marquer que c'est heredoc (<<)
 			cmd[index_cmd].in_heredoc = add_double_tab_int(cmd[index_cmd].in_heredoc, 1, cmd[index_cmd].compter_in_hd);
@@ -1320,30 +1337,49 @@ void	print_heredoc_warning_ctrl_d(char *delimiter)
 
 // recuperer les lignes de heredoc, puis les stocker dans le fichier temp
 // fd = fd de fichier temporaire temp, delimiter = limiter
-int	collecter_heredoc_lines(int fd, char *delimiter)
+// int	collecter_heredoc_lines(int fd, char *delimiter)
+int	collecter_heredoc_lines(int fd, t_mini *mini, int j, int n)
 {
-	char *line;
+	char	*line;
+	char	*line_applique;
 
-	if (!delimiter)
+	if (!mini || !mini->cmd
+		|| j < 0 || j >= mini->nbr_cmd || !mini->cmd[j].limiter
+		|| n < 0 || n >= mini->cmd[j].compter_heredoc || !mini->cmd[j].hd_env)
+		return (-1);
+	if (!mini->cmd[j].limiter[n])
 		return (1);
 	while (1)
 	{
 		line = readline("> "); // afficher un prompte qui ressemble a heredoc
 		if (!line) // saisit ctrl+D -> on quitte
 			return (1); // dans ce cas (ctrl+D), pas besoin de liberer le memoire, puisqu'il y en a pas
-		if (delimiter && ft_strcmp(line, delimiter) == 0) // quand on croise limiter -> on quitte
+		if (mini->cmd[j].limiter[n] && ft_strcmp(line, mini->cmd[j].limiter[n]) == 0) // quand on croise limiter -> on quitte
 		// si delimiter est NULL -> erreur (pour proteger on ajoute dans la condition delimiter aussi)
 		{
 			free(line); // liberer readline
 			return (0); // quitte la boucle (et cette fonction)
 		}
-		if (write(fd, line, ft_strlen(line)) == -1 || write(fd, "\n", 1) == -1) // ecrire la ligne dans le fichier temp (le resultat de line + '\n')
+
+		line_applique = line;
+		if (mini->cmd[j].hd_env[n])
+		{
+			line_applique = remplacer_dollar(line, mini);
+			if (!line_applique)
+				return (free(line), -1);
+		}
+
+		if (write(fd, line_applique, ft_strlen(line_applique)) == -1 || write(fd, "\n", 1) == -1) // ecrire la ligne dans le fichier temp (le resultat de line + '\n')
 		// le resultat de readline n'applique pas automatiquement '\n', on en ajoute a la fin
 		// si write retourne -1, c'est une erreur d'ecriture, on libere readline et on retourne -1
 		{
+			if (mini->cmd[j].hd_env[n])
+				free(line_applique);
 			free(line);
 			return (-1); // si echec d'ecriture
 		}
+		if (mini->cmd[j].hd_env[n])
+			free(line_applique);
 		free(line); // free readline avant de quitter la fonction hihi
 	}
 	return (0);
@@ -1414,7 +1450,7 @@ void	appliquer_heredoc_enfant(t_mini *mini, int j, int n)
 		close(fd_temp);
 		exit (1);
 	}
-	resultat = collecter_heredoc_lines(fd_temp, mini->cmd[j].limiter[n]);
+	resultat = collecter_heredoc_lines(fd_temp, mini, j, n);
 	// collecter des lignes heredoc dans le fichier temp
 	// (lire des lignes jusqu'a ce qu'on arrive limiter[n], puis les ecrire dans le fichier temp)
 	if (resultat == 1) // ctrl-D

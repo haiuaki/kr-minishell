@@ -183,14 +183,12 @@ int		appliquer_quote_sur_liste_token(t_token **token); // enlever des quotes pou
 
 // ===================================================== redirection ===================================================
 
-// int		appliquer_outfile(t_mini *mini, int i); // appliquer la redirection outfile (>) pour la commande i
-// int		appliquer_append(t_mini *mini, int i); // appliquer la redirection append (>>) pour la commande i
 void	process_out_redir(t_mini *mini, int i); // proceder a la redirection de sortie pour la commande i (> ou >>)
 int		appliquer_infile(t_mini *mini, int i); // appliquer la redirection infile (<) pour la commande i
 
 // heredoc
 int		preparer_temp_file_name(t_mini *mini, int j, int n);
-int		collecter_heredoc_lines(int fd, char *delimiter); // recuperer les lignes de heredoc, puis les stocker dans le fichier temp
+int		collecter_heredoc_lines(int fd, t_mini *mini, int j, int n); // recuperer les lignes de heredoc, puis les stocker dans le fichier temp
 void	appliquer_heredoc_enfant(t_mini *mini, int j, int n); // appliquer heredoc dans le processus enfant
 int		check_quote_limiter(char *limiter); // verifier s'il y a une quote paire dans limiter
 int		check_heredoc_env(char *limiter); // verifier soit on applique l'expansion de l'env ou non par rapport a limiter
