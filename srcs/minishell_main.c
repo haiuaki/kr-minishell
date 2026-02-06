@@ -511,7 +511,9 @@ t_cmd	*malloc_cmd(t_token *token)
 
 		cmd[j].in_heredoc = NULL; // tableau int pour sauvegarder le type de in redir (<, <<) par ordre
 		cmd[j].in_hd_index = NULL; // index de chaque infile(<) et limiter(<<) qui concerne chaque redir de in_heredoc
-		cmd[j].compter_in_hd = 0; // compter le nombre de in redir
+		cmd[j].compter_in_hd = 0; // compter le nombre de in redir d'entree (<, <<)
+
+		cmd[j].hd_env = NULL; // tableau int: appliquer env expansion pour chaque limiter[n] (1 env, 0 sinon)
 
 		// out_append[j] correspond a outfile[j]: 1 pour >> (append), 0 pour > (truncate)
 		cmd[j].out_append = NULL; // initialiser a NULL pour proteger
@@ -566,7 +568,9 @@ int	*add_double_tab_int(int *tab, int val, int size)
 
 	// size = len_tab_char(tab); // compter le nombre d'elements dans le tableau char
 	if (!tab && size > 0) // proteger au cas ou tab est NULL mais size > 0
-			return (NULL);
+		return (NULL);
+	if (size < 0)
+		return (NULL);
 	new_tab = malloc(sizeof(int) * (size + 1)); // +1 pour le nouveau 
 	// cf) int *tab n'a pas besoin d'ajouter '\0' a la fin 
 	if (!new_tab)
@@ -799,8 +803,7 @@ void test_print_cmds(t_cmd *cmd, int nbr_cmd)
 // chaque noeud serait d'abord divise que par soit mot, soit redir, soit pipe  (cf. t_type token)
 int parse_input(char *line, t_token **token, t_mini *mini) 
 {
-	// (void)mini;
-	int						len;
+	int				len;
 	t_type_token	fd_type;
 
 	len = 0;
@@ -1076,7 +1079,7 @@ int	appliquer_dollar_sur_liste_token(t_token **token, t_mini *mini)
 		if (temp->type_token == T_MOT || temp->type_token == T_FD_IN
 			|| temp->type_token == T_FD_OUT || temp->type_token == T_FD_OUT_APPEND)
 			// si le type de token est T_MOT et redir -> on applique le remplacement de $
-			// heredoc a faire apres ***********************************************************
+			// heredoc sera gere ailleurs
 		{
 			if (!temp->str) // si str est NULL, on retourne -1 (erreur)
 				return (-1);
@@ -1512,6 +1515,11 @@ int	appliquer_heredoc_cmd(t_mini *mini, int j)
 }
 
 
+
+
+// ========================================= test ===========================================
+// ==========================================================================================
+
 // juste pour tester les redir 
 static void	print_preview_path(const char *path)
 {
@@ -1538,6 +1546,47 @@ static void	print_preview_path(const char *path)
 	close(fd);
 }
 
+
+static void	print_in_redir_order(t_cmd *cmd)
+{
+	int k;
+
+	if (!cmd)
+		return ;
+
+	printf("order: compter_in_hd=%d\n", cmd->compter_in_hd);
+
+	printf("order: in_heredoc=");
+	if (!cmd->in_heredoc)
+		printf("(null)\n");
+	else
+	{
+		k = 0;
+		while (k < cmd->compter_in_hd)
+		{
+			printf("%d ", cmd->in_heredoc[k]); // 0=< , 1=<<
+			k++;
+		}
+		printf("\n");
+	}
+
+	printf("order: in_hd_index=");
+	if (!cmd->in_hd_index)
+		printf("(null)\n");
+	else
+	{
+		k = 0;
+		while (k < cmd->compter_in_hd)
+		{
+			printf("%d ", cmd->in_hd_index[k]); // index dans infile[] ou limiter[]
+			k++;
+		}
+		printf("\n");
+	}
+}
+
+
+
 // ca aussi juste pour tester redir j'en ai maaaaaare
 void	test_redirs(t_mini *mini)
 {
@@ -1551,11 +1600,7 @@ void	test_redirs(t_mini *mini)
 	{
 		printf("\n========== CMD %d ==========\n", i);
 
-		printf("raw: heredoc=%d limiter=%s temp=%s\n",
-			mini->cmd[i].heredoc,
-			mini->cmd[i].limiter ? mini->cmd[i].limiter : "(null)",
-			mini->cmd[i].temp_heredoc ? mini->cmd[i].temp_heredoc : "(null)");
-
+		// 0) dump parsing infos (infile/limiter/temp/outfile)
 		printf("raw: infile=");
 		if (mini->cmd[i].infile)
 		{
@@ -1570,6 +1615,34 @@ void	test_redirs(t_mini *mini)
 			printf("(null)");
 		printf("\n");
 
+		printf("raw: limiter=");
+		if (mini->cmd[i].limiter)
+		{
+			int k = 0;
+			while (mini->cmd[i].limiter[k])
+			{
+				printf("[<< %s] ", mini->cmd[i].limiter[k]);
+				k++;
+			}
+		}
+		else
+			printf("(null)");
+		printf("\n");
+
+		printf("raw: temp_heredoc=");
+		if (mini->cmd[i].temp_heredoc)
+		{
+			int k = 0;
+			while (mini->cmd[i].temp_heredoc[k])
+			{
+				printf("[%s] ", mini->cmd[i].temp_heredoc[k]);
+				k++;
+			}
+		}
+		else
+			printf("(null)");
+		printf("\n");
+
 		printf("raw: outfile=");
 		if (mini->cmd[i].outfile)
 		{
@@ -1577,7 +1650,7 @@ void	test_redirs(t_mini *mini)
 			while (mini->cmd[i].outfile[k])
 			{
 				int mode = 0;
-				if (mini->cmd[i].out_append && mini->cmd[i].out_append[k] != -1)
+				if (mini->cmd[i].out_append)
 					mode = mini->cmd[i].out_append[k];
 				printf("[%s mode=%s] ", mini->cmd[i].outfile[k], mode ? ">>" : ">");
 				k++;
@@ -1587,28 +1660,68 @@ void	test_redirs(t_mini *mini)
 			printf("(null)");
 		printf("\n");
 
-		// 1) heredoc
-		if (mini->cmd[i].heredoc)
+		// NEW: print in redir order arrays
+		print_in_redir_order(&mini->cmd[i]);
+
+		// 1) appliquer "in" redirections selon l'ordre (0=< , 1=<<)
+		//    (pour tester: on simule juste l'effet final -> dernier redir gagne)
+		if (mini->cmd[i].compter_in_hd > 0 && !mini->cmd[i].in_fail)
+		{
+			int k = 0;
+			while (k < mini->cmd[i].compter_in_hd)
+			{
+				int kind = mini->cmd[i].in_heredoc ? mini->cmd[i].in_heredoc[k] : -1;
+				int idx  = mini->cmd[i].in_hd_index ? mini->cmd[i].in_hd_index[k] : -1;
+
+				if (kind == 0) // '<' -> infile[idx]
+				{
+					if (!mini->cmd[i].infile || idx < 0 || !mini->cmd[i].infile[idx])
+						printf("    [in order] k=%d: <  idx=%d  (INVALID)\n", k, idx);
+					else
+						printf("    [in order] k=%d: <  idx=%d  file=%s\n", k, idx, mini->cmd[i].infile[idx]);
+				}
+				else if (kind == 1) // '<<' -> limiter[idx]
+				{
+					if (!mini->cmd[i].limiter || idx < 0 || !mini->cmd[i].limiter[idx])
+						printf("    [in order] k=%d: << idx=%d  (INVALID)\n", k, idx);
+					else
+						printf("    [in order] k=%d: << idx=%d  limiter=%s\n", k, idx, mini->cmd[i].limiter[idx]);
+				}
+				else
+					printf("    [in order] k=%d: kind=%d idx=%d (UNKNOWN)\n", k, kind, idx);
+
+				k++;
+			}
+		}
+
+		// 2) heredoc (si parsing a detecte au moins un <<)
+		if (mini->cmd[i].compter_heredoc > 0)
 		{
 			if (appliquer_heredoc_cmd(mini, i) == -1)
 				printf("    heredoc: FAIL (exit_status=%d)\n", mini->exit_status);
 			else
 				printf("    heredoc: OK (fd_in=%d)\n", mini->cmd[i].fd_in);
 
-			// heredoc lire
+			// preview last heredoc temp file (celui qui sera utilisé si dernier in redir est <<)
 			if (!mini->cmd[i].in_fail && mini->cmd[i].temp_heredoc)
-				print_preview_path(mini->cmd[i].temp_heredoc);
+			{
+				int last = 0;
+				while (mini->cmd[i].temp_heredoc[last])
+					last++;
+				if (last > 0)
+					print_preview_path(mini->cmd[i].temp_heredoc[last - 1]);
+			}
 		}
 
-		// 2) infile (s'il y a heredoc, on passe)
-		if (!mini->cmd[i].heredoc && mini->cmd[i].infile && mini->cmd[i].infile[0])
+		// 3) infile (pour tester: on l'applique aussi, mais en vrai ça dépend de l'ordre)
+		if (mini->cmd[i].infile && mini->cmd[i].infile[0])
 		{
 			if (appliquer_infile(mini, i) == -1)
 				printf("    infile: FAIL (exit_status=%d)\n", mini->exit_status);
 			else
 				printf("    infile: OK (fd_in=%d)\n", mini->cmd[i].fd_in);
 
-			// infile: lire le dernier infile
+			// preview last infile
 			if (!mini->cmd[i].in_fail)
 			{
 				int last = 0;
@@ -1619,7 +1732,7 @@ void	test_redirs(t_mini *mini)
 			}
 		}
 
-		// 3) outfile
+		// 4) outfile
 		if (mini->cmd[i].outfile && mini->cmd[i].outfile[0])
 		{
 			process_out_redir(mini, i);
@@ -1640,11 +1753,12 @@ void	test_redirs(t_mini *mini)
 }
 
 
+
+
 int	main(int ac, char **av, char **env)
 {
 	(void)ac;
 	(void)av;
-	// (void)env;
 	char	*line;
 	t_cmd	*cmd;
 	t_token	*parsing;

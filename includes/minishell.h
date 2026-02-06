@@ -74,12 +74,7 @@ typedef struct s_cmd
 	char	**infile; // tableau des fichiers de redirection entree (<)
 	char	**outfile; // tableau des fichiers de redirection sortie (>)
 	int		*out_append; // tableau, 1 si redirection en mode append (>>), 0 sinon (>)
-	// char	*infile; // fichier de redirection entree (<)
-	// char	*outfile; // fichier de redirection sortie (>)
 
-	// cmd[j].out_append *********************************************************
-	// cmd[j].heredoc ***********************************************************
-	// heredoc
 	char	**temp_heredoc; // tableau des fichiers temporaires pour heredoc
 	char	**limiter; // tableau des limiters (sauvegarder pls limiters)
 	int		compter_heredoc; // le nombre de heredoc
@@ -88,12 +83,9 @@ typedef struct s_cmd
 	int		*in_hd_index; // tableau des index de chaque infile(<) et de limiter(<<) qui concerne chaque redir de in_heredoc
 	int		compter_in_hd; // compter le nombre de in/heredoc redir
 
-	// char	*temp_heredoc; // fichier temporaire pour heredoc
-
-	// int		out_append; // 1 si redirection en mode append (>>), 0 sinon
 	int		heredoc; // 1 si redirection heredoc (<<), 0 sinon
 
-	// char	*limiter; // limiteur pour heredoc
+	int		*hd_env; // 1 applique env pour heredoc, 0 sinon
 
 	pid_t	pid_heredoc; // pid du processus heredoc
 	// resultat des fd
@@ -116,23 +108,6 @@ typedef struct s_mini
 
 
 
-// typedef struct s_parse
-// {
-// 	char			*val;
-// 	t_state			state;
-// 	struct s_parse	*next;
-// }	t_parse;
-
-// typedef struct minis
-// {
-// 	char	**res;
-// 	char	*line;
-// 	char	**env;
-// 	int		exit_status;
-// }	t_minis;
-
-
-// en cours
 
 void	parse_builtin(char *line);
 
