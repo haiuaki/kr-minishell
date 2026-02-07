@@ -1190,7 +1190,7 @@ int	appliquer_quote_sur_liste_token(t_token **token)
 			// printf("avant enlever quote: [%s]\n", temp->str);
 			new_str = enlever_quote_dans_token(temp->str); // enlever les quotes dans token->str
 			if (!new_str)
-				return (free_tokens(token), -1);
+				return (-1);
 			free(temp->str);
 			temp->str = new_str; // on met a jour token->str avec le nouveau str
 			// printf("apres enlever quote: [%s]\n", temp->str);
@@ -1855,8 +1855,8 @@ void	free_tokens(t_token **token)
 		*token = (*token)->next;
 		free(tmp->str); // free la string du token
 		free(tmp); // free le token lui-meme
-		*token = NULL; // reinitialiser a NULL pour eviter les dangling pointer
 	}
+	*token = NULL; // reinitialiser a NULL pour eviter les dangling pointer
 }
 
 // free le tableau de string (ex. infile[], outfile[], temp_heredoc[], limiter[])
