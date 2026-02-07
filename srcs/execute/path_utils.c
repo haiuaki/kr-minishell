@@ -81,10 +81,10 @@ char	*cmd_path_center(t_mini *mini, char *cmd)
 	if (does_file_exist(cmd)) {
 		if (is_directory(cmd)) {
 			// set exit_status as 126
-			// return ?
+			return NULL;
 		} else if (!is_executable(cmd)) {
 			// set exit status as 126
-			// return ?
+			return NULL;
 		} else {
 			return (ft_strdup(cmd));
 		}
@@ -96,12 +96,13 @@ char	*cmd_path_center(t_mini *mini, char *cmd)
 		if (!whole)
 			return (NULL);
 		if (does_file_exist(whole)) {
-			if (is_directory(cmd)) {
+			if (is_directory(whole)) {
 				// set exit_status as 126
+				return NULL;
 				// return ?
-			} else if (!is_executable(cmd)) {
+			} else if (!is_executable(whole)) {
 				// set exit status as 126
-				// return ?
+				return NULL;
 			} else {
 				return (whole);
 			}
@@ -109,6 +110,5 @@ char	*cmd_path_center(t_mini *mini, char *cmd)
 		free(whole);
 		i++;
 	}
-	
 	return (mini->exit_status = 127, NULL);
 }
