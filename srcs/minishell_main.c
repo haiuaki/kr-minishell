@@ -1283,6 +1283,11 @@ void	process_out_redir(t_mini *mini, int i)
 			perror(mini->cmd[i].outfile[n]); // afficher l'erreur
 			mini->exit_status = 1; // mettre le code de sortie a 1
 			mini->cmd[i].out_fail = 1; // marquer que l'ouverture a echoue
+			if (mini->cmd[i].fd_out != -1)
+			{
+				close(mini->cmd[i].fd_out);
+				mini->cmd[i].fd_out = -1;
+			}
 			return ;
 		}
 		if (mini->cmd[i].fd_out != -1) // si un ancien fichier out existe,
@@ -1317,12 +1322,19 @@ int	appliquer_infile(t_mini *mini, int i)
 		{
 			perror(mini->cmd[i].infile[n]); // afficher l'erreur
 			mini->exit_status = 1; // mettre le code de sortie a 1
-			mini->cmd[i].fd_in = -1; // marquer que l'ouverture a echoue
 			mini->cmd[i].in_fail = 1; // marquer que l'ouverture a echoue
+			if (mini->cmd[i].fd_in != -1)
+			{
+				close(mini->cmd[i].fd_in);
+				mini->cmd[i].fd_in = -1;
+			}
 			return (-1);
 		}
 		if (mini->cmd[i].fd_in != -1) // si un ancien fichier in existe,
+		{
 			close(mini->cmd[i].fd_in); // on le ferme avant de le remplacer
+			mini->cmd[i].fd_in = -1;
+		}
 		mini->cmd[i].fd_in = fd_temp; // reinitialiser fd_in
 		// ce fichier devient l'entree active (le dernier redir qui va s'effectuer)
 		n++;
