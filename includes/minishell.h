@@ -153,6 +153,11 @@ int		check_pipe_fin(char *line); // verifier s'il y a un pipe a la fin de la cha
 
 // free
 void	free_tokens(t_token **token); // liste free
+void	free_tab_char(char **tab); // free le tableau de string 
+void	free_tab_int(int *tab); // free le tableau d'int
+void	free_temp_heredoc(char **temp); // supprimer tous les fichiers temporaires de heredoc (unlink), puis free le tableau temp_heredoc[]
+void	free_cmd_fd_tab(t_cmd *cmd); // free les fd de cmd, puis free les tableaux 
+void	free_cmd_all(t_cmd *cmd, int nbr_cmd); // free tous les cmd 
 
 
 // ======================================================= commande ===================================================

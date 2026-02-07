@@ -1270,7 +1270,7 @@ void	process_out_redir(t_mini *mini, int i)
 		fd_temp = -1; // on initialise a nouveau le fd temporaire a chaque iteration
 		// si un tableau out_append existe, on recupere le type de redir associe a ce fichier
 		// out_append[n] correspond a outfile[n] (0 est >, 1 est >>)
-		if (!mini->cmd[i].out_append)
+		if (!mini->cmd[i].out_append || n >= len_tab_char(mini->cmd[i].outfile))
 			type_redir = 0; // s'il y a un probleme, 0 par defaut
 		else
 			type_redir = mini->cmd[i].out_append[n];
@@ -1308,10 +1308,7 @@ int	appliquer_infile(t_mini *mini, int i)
 	if (mini->cmd[i].in_fail || mini->cmd[i].out_fail) // si deja echec de redir in ou out, on ne fait rien
 		return (0);
 	if (mini->cmd[i].infile == NULL) // proteger au cas ou infile est NULL
-	{
-		mini->exit_status = 2;
-		return (-1);
-	}
+		return (0);
 	while (mini->cmd[i].infile[n]) // pour chaque fichier de redirection infile
 	{
 		fd_temp = open(mini->cmd[i].infile[n], O_RDONLY);
