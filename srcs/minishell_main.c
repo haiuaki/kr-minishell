@@ -628,6 +628,9 @@ int add_cmd(t_token *token, t_cmd *cmd)
 	int		size_file_tab; // pour compter la taille actuelle du tableau de fichiers (infile ou outfile) pour agrandir le tableau et ajouter un nouveau fichier
 	char	*limiter_sans_quote;
 	int		limiter_env;
+	char	**new_tab_char; // temporaire pour le nom de la commande (pour proteger)
+	// si l'un des fonctions add_tab_char ou add_tab_int retourne NULL, ca risque de perdre tous les pointeurs qui etaient deja dans le tableau cmd, donc on utilise des pointeurs temporaires pour proteger (pour garder des anciens pointeurs)
+	int		*new_tab_int; // temporaire pour le tableau int (pour proteger)
 
 	index_cmd = 0;
 	i = 0;
@@ -652,7 +655,7 @@ int add_cmd(t_token *token, t_cmd *cmd)
 					return (-1);
 				cmd[index_cmd].cmd[0] = ft_strdup(token->str); // on ajoute le contenu de token a cet argument de la telle structure
 				if (!cmd[index_cmd].cmd[0])
-					return (-1);
+					return (free(cmd[index_cmd].cmd), cmd[index_cmd].cmd = NULL, -1);
 				cmd[index_cmd].cmd[1] = NULL; // vu que c'est un double tableau (tableau de pointeurs char *, donc argv), on place d'abord le NULL final
 			}
 			else // s'il y a deja un argument dans le double tableau, on agrandit le tableau (pour ajouter un nouvel arguement)
@@ -660,8 +663,12 @@ int add_cmd(t_token *token, t_cmd *cmd)
 				mot_temp = ft_strdup(token->str); // dupliquer le contenu de token->str (pour proteger)
 				if (!mot_temp)
 					return (-1);
-				cmd[index_cmd].cmd = add_double_tab_char(cmd[index_cmd].cmd, mot_temp, i); // agrandir le tableau cmd[index_cmd].cmd pour ajouter le nouveau mot
-				// ex) tab[0] = {"echo", NULL} -> {"echo", "hihi", NULL} 
+				new_tab_char = add_double_tab_char(cmd[index_cmd].cmd, mot_temp, i); // agrandir le tableau cmd[index_cmd].cmd pour ajouter le nouveau mot
+				// ex) tab[0] = {"echo", NULL} -> {"echo", "hihi", NULL}
+				// on le sauvegarde d'abord dans un pointeur temporaire pour proteger au cas ou add_double_tab_char retourne NULL (perte de tous les pointeurs dans cmd[index_cmd].cmd)
+				if (!new_tab_char)
+					return (free(mot_temp), -1);
+				cmd[index_cmd].cmd = new_tab_char; // mettre a jour le tableau de la structure avec le nouveau tableau agrandi
 				if (!cmd[index_cmd].cmd)
 					return (-1);
 			}
@@ -673,18 +680,28 @@ int add_cmd(t_token *token, t_cmd *cmd)
 			if (!file_temp)
 				return (-1);
 			size_file_tab = len_tab_char(cmd[index_cmd].infile); // compter la taille actuelle du tableau infile
-			cmd[index_cmd].infile = add_double_tab_char(cmd[index_cmd].infile, file_temp, size_file_tab);
+
+			new_tab_char = add_double_tab_char(cmd[index_cmd].infile, file_temp, size_file_tab);
 			// agrandir le tableau infile pour ajouter le nouveau fichier
 			// ex) cat < file1 < file2  -> infile = {"file1", "file2", NULL}
 			// on n'ecrase plus, on stocke tout dans l'ordre
+			if (!new_tab_char)
+				return (free(file_temp), -1);
+			cmd[index_cmd].infile = new_tab_char; // mettre a jour le tableau de la structure avec le nouveau tableau agrandi
 			if (!cmd[index_cmd].infile)
 				return (-1);
-			cmd[index_cmd].in_heredoc = add_double_tab_int(cmd[index_cmd].in_heredoc, 0, cmd[index_cmd].compter_in_hd);
+			new_tab_int = add_double_tab_int(cmd[index_cmd].in_heredoc, 0, cmd[index_cmd].compter_in_hd);
 			// ajouter le type de in redir: dans ce cas c'est in (<), on ajoute 0
+			if (!new_tab_int)
+				return (-1);
+			cmd[index_cmd].in_heredoc = new_tab_int; // mettre a jour le tableau de la structure avec le nouveau tableau agrandi
 			if (!cmd[index_cmd].in_heredoc)
 				return (-1);
-			cmd[index_cmd].in_hd_index = add_double_tab_int(cmd[index_cmd].in_hd_index, size_file_tab, cmd[index_cmd].compter_in_hd);
+			new_tab_int = add_double_tab_int(cmd[index_cmd].in_hd_index, size_file_tab, cmd[index_cmd].compter_in_hd);
 			// sauvegarde l'index de infile de cette in redir
+			if (!new_tab_int)
+				return (-1);
+			cmd[index_cmd].in_hd_index = new_tab_int; // mettre a jour le tableau de la structure avec le nouveau tableau agrandi
 			if (!cmd[index_cmd].in_hd_index)
 				return (-1);
 			cmd[index_cmd].compter_in_hd++; // des qu'on ajoute in redir, on incremente de 1 (l'index de in redir)
@@ -695,12 +712,17 @@ int add_cmd(t_token *token, t_cmd *cmd)
 			if (!file_temp)
 				return (-1);
 			size_file_tab = len_tab_char(cmd[index_cmd].outfile); // compter la taille actuelle du tableau outfile
-			cmd[index_cmd].outfile = add_double_tab_char(cmd[index_cmd].outfile, file_temp, size_file_tab); // agrandir le tableau outfile pour ajouter le nouveau fichier
+			new_tab_char = add_double_tab_char(cmd[index_cmd].outfile, file_temp, size_file_tab); // agrandir le tableau outfile pour ajouter le nouveau fichier
+			if (!new_tab_char)
+				return (free(file_temp), -1);
+			cmd[index_cmd].outfile = new_tab_char; // mettre a jour le tableau de la structure avec le nouveau tableau agrandi
 			if (!cmd[index_cmd].outfile)
 				return (-1);
-			cmd[index_cmd].out_append = add_double_tab_int(cmd[index_cmd].out_append, 0, size_file_tab);
-			// agrandir le tableau out_append pour ajouter 0 (truncate) <- puisqu'on est dans la condition T_FD_OUT >
+			new_tab_int = add_double_tab_int(cmd[index_cmd].out_append, 0, size_file_tab); // agrandir le tableau out_append pour ajouter 0 (truncate) <- puisqu'on est dans la condition T_FD_OUT >
 			// 0='>' (truncate), 1='>>' (append)
+			if (!new_tab_int)
+				return (-1);
+			cmd[index_cmd].out_append = new_tab_int; // mettre a jour le tableau de la structure avec le nouveau tableau agrandi
 			if (!cmd[index_cmd].out_append)
 				return (-1);
 		}
@@ -710,11 +732,17 @@ int add_cmd(t_token *token, t_cmd *cmd)
 			if (!file_temp)
 				return (-1);
 			size_file_tab = len_tab_char(cmd[index_cmd].outfile); // compter la taille actuelle du tableau outfile
-			cmd[index_cmd].outfile = add_double_tab_char(cmd[index_cmd].outfile, file_temp, size_file_tab); // agrandir le tableau outfile pour ajouter le nouveau fichier
+			new_tab_char = add_double_tab_char(cmd[index_cmd].outfile, file_temp, size_file_tab); // agrandir le tableau outfile pour ajouter le nouveau fichier
+			if (!new_tab_char)
+				return (free(file_temp), -1);
+			cmd[index_cmd].outfile = new_tab_char; // mettre a jour le tableau de la structure avec le nouveau tableau agrandi
 			if (!cmd[index_cmd].outfile)
 				return (-1);
-			cmd[index_cmd].out_append = add_double_tab_int(cmd[index_cmd].out_append, 1, size_file_tab); // agrandir le tableau out_append pour ajouter 1 (append) <- puisqu'on est dans la condition T_FD_OUT_APPEND >>
+			new_tab_int = add_double_tab_int(cmd[index_cmd].out_append, 1, size_file_tab); // agrandir le tableau out_append pour ajouter 1 (append) <- puisqu'on est dans la condition T_FD_OUT_APPEND >>
 			// 0='>' (truncate), 1='>>' (append)
+			if (!new_tab_int)
+				return (-1);
+			cmd[index_cmd].out_append = new_tab_int; // mettre a jour le tableau de la structure avec le nouveau tableau agrandi
 			if (!cmd[index_cmd].out_append)
 				return (-1);
 		}
@@ -731,24 +759,35 @@ int add_cmd(t_token *token, t_cmd *cmd)
 			if (!limiter_sans_quote)
 				return (-1);
 
-			cmd[index_cmd].limiter = add_double_tab_char(cmd[index_cmd].limiter, limiter_sans_quote, n); 
+			new_tab_char = add_double_tab_char(cmd[index_cmd].limiter, limiter_sans_quote, n); 
 			// sauvegarder et agrandir le tableau limiter (sans quote) pour ajouter le nouveau limiter
+			if (!new_tab_char)
+				return (free(limiter_sans_quote), -1);
+			cmd[index_cmd].limiter = new_tab_char; // mettre a jour le tableau de la structure avec le nouveau tableau agrandi
 			if (!cmd[index_cmd].limiter)
 				return (-1);
-
-			cmd[index_cmd].hd_env = add_double_tab_int(cmd[index_cmd].hd_env, limiter_env, n);
+			new_tab_int = add_double_tab_int(cmd[index_cmd].hd_env, limiter_env, n);
 			// sauvegarder le type de l'expansion de l'env de chaque cas
+			if (!new_tab_int)
+				return (-1);
+			cmd[index_cmd].hd_env = new_tab_int; // mettre a jour le tableau de la structure avec le nouveau tableau agrandi
 			if (!cmd[index_cmd].hd_env)
 				return (-1);
 
 			cmd[index_cmd].compter_heredoc++; // incrementer le nombre de heredoc pour cette commande
 			cmd[index_cmd].heredoc = 1; // marquer que c'est heredoc (<<)
-			cmd[index_cmd].in_heredoc = add_double_tab_int(cmd[index_cmd].in_heredoc, 1, cmd[index_cmd].compter_in_hd);
+			new_tab_int = add_double_tab_int(cmd[index_cmd].in_heredoc, 1, cmd[index_cmd].compter_in_hd);
 			// ajouter le type de in redir: dans ce cas c'est heredoc (<<), on ajoute 1
+			if (!new_tab_int)
+				return (-1);
+			cmd[index_cmd].in_heredoc = new_tab_int; // mettre a jour le tableau de la structure avec le nouveau tableau agrandi
 			if (!cmd[index_cmd].in_heredoc)
 				return (-1);
-			cmd[index_cmd].in_hd_index = add_double_tab_int(cmd[index_cmd].in_hd_index, n, cmd[index_cmd].compter_in_hd);
+			new_tab_int = add_double_tab_int(cmd[index_cmd].in_hd_index, n, cmd[index_cmd].compter_in_hd);
 			// sauvegarde l'index de infile de cette heredoc redir
+			if (!new_tab_int)
+				return (-1);
+			cmd[index_cmd].in_hd_index = new_tab_int; // mettre a jour le tableau de la structure avec le nouveau tableau agrandi
 			if (!cmd[index_cmd].in_hd_index)
 				return (-1);
 			cmd[index_cmd].compter_in_hd++; // des qu'on ajoute in redir, on incremente de 1 (l'index de in redir)
