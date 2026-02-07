@@ -24,12 +24,18 @@ SRCS =  main_execute.c \
 		error_utils.c \
 		path_utils.c \
 		file_utils.c \
-		hardcode.c 
+		builtin_utils.c \
+		hardcode.c \
+		../built-ins/bi_cd.c
 # ════════════════════════════════════════════════════════════════════════════ #
 #                                OBJECT FILES                                  #
 # ════════════════════════════════════════════════════════════════════════════ #
 
 OBJS = $(addprefix $(OBJ_DIR)/, $(notdir $(SRCS:.c=.o)))
+
+$(OBJ_DIR)/%.o: ../built-ins/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+	
 
 # ════════════════════════════════════════════════════════════════════════════ #
 #                                PHONY TARGETS                                 #

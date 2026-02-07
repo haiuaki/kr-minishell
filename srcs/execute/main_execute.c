@@ -2,15 +2,26 @@
 
 int main(int ac, char** av, char** env)
 {
-  t_mini *mini= build_echo_cat_wc();
+    t_mini *mini= build_echo_cat_wc();
+    int check_builtin;
 
-  mini->env = env;
-//   redirection_center(mini);
-  set_path_array(mini);
-//   mini->path_array
-	(void)ac;
-	(void)av;
-fork_center(mini);
+    (void)ac;
+    (void)av;
+    mini->env = env;
+    //   redirection_center(mini);
+    set_path_array(mini);
+    check_builtin = is_built_in(mini->cmd_array[0].cmd[0]);
+    printf("cmd0=%s, builtin=%d\n", mini->cmd_array[0].cmd[0], check_builtin);
+    if (mini->nbr_cmd == 1 && check_builtin != T_NOT_BUILT_IN)
+    {
+      execute_built_in(mini, mini->cmd_array[0].cmd, check_builtin);
+      char buf[1024];
+      if (getcwd(buf, sizeof(buf)))
+        printf("after cd cwd = %s\n", buf);
+      else
+      perror("getcwd");
 
-(void)(mini);
+      return (0);
+    }
+    fork_center(mini);
 }

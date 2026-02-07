@@ -37,7 +37,6 @@ void	set_path_array(t_mini *mini)
 	}
 }
 
-
 char	*get_cmd(t_mini *mini, t_cmd *cmd)
 {
 	int		i;
@@ -64,44 +63,48 @@ char	*get_cmd(t_mini *mini, t_cmd *cmd)
 	return (NULL);
 }
 
-char	*cmd_path_center(t_mini *mini, char *cmd)
+char *get_path_absolute(t_mini *mini, char *cmd)
 {
-	int		i;
-	char	*whole;
-	i = 0;
-
-	if (!mini || !cmd)
+	if (does_file_exist(cmd)) 
 	{
-		mini->exit_status = 0;
-		return (NULL);
-	}
-	// if (im_bi(mini))
-	// 	return (mini->exit_status = 0, NULL); // 빌트인 있고 파이프 없으면 패런트 실행 둘다 있으면 차일드 실행 처럼 엑섹으로 빼던가
-	
-	if (does_file_exist(cmd)) {
-		if (is_directory(cmd)) {
-			// set exit_status as 126
+		if (is_directory(cmd)) 
+		{
+			mini->exit_status = 126;
 			return NULL;
-		} else if (!is_executable(cmd)) {
-			// set exit status as 126
+		} 
+		else if (!is_executable(cmd)) 
+		{
+			mini->exit_status = 126;
 			return NULL;
-		} else {
+		} 
+		else
 			return (ft_strdup(cmd));
-		}
 	}
+	return (NULL);
+}
 
+char *get_path_envp(t_mini *mini, char *cmd)
+{
+	int	i;
+	char	*whole;
+
+	i = 0;
 	while (mini->path_array[i])
 	{
 		whole = ft_strjoin(mini->path_array[i], cmd);
 		if (!whole)
 			return (NULL);
-		if (does_file_exist(whole)) {
-			if (is_directory(whole)) {
-				// set exit_status as 126
+		if (does_file_exist(whole)) 
+		{
+			if (is_directory(whole)) 
+			{
+				mini->exit_status = 126;
 				return NULL;
 				// return ?
-			} else if (!is_executable(whole)) {
-				// set exit status as 126
+			}
+			else if (!is_executable(whole)) 
+			{
+				mini->exit_status = 126;
 				return NULL;
 			} else {
 				return (whole);
@@ -112,3 +115,74 @@ char	*cmd_path_center(t_mini *mini, char *cmd)
 	}
 	return (mini->exit_status = 127, NULL);
 }
+
+char	*cmd_path_center(t_mini *mini, char *cmd)
+{
+	char	*found_path;
+	if (!mini || !cmd)
+	{
+		mini->exit_status = 0;
+		return (NULL);
+	}
+	
+	// if (im_bi(mini))
+	// 	return (mini->exit_status = 0, NULL); // 빌트인 있고 파이프 없으면 패런트 실행 둘다 있으면 차일드 실행 처럼 엑섹으로 빼던가
+	
+	found_path = get_path_absolute(mini, cmd);
+	if (found_path == NULL && mini->exit_status != 126)
+	{
+		return (get_path_envp(mini, cmd));
+	}
+	else
+		return (found_path);
+}
+
+// char	*cmd_path_center(t_mini *mini, char *cmd)
+// {
+// 	int		i;
+// 	char	*whole;
+// 	i = 0;
+
+// 	if (!mini || !cmd)
+// 	{
+// 		mini->exit_status = 0;
+// 		return (NULL);
+// 	}
+// 	// if (im_bi(mini))
+// 	// 	return (mini->exit_status = 0, NULL); // 빌트인 있고 파이프 없으면 패런트 실행 둘다 있으면 차일드 실행 처럼 엑섹으로 빼던가
+	
+// 	if (does_file_exist(cmd)) {
+// 		if (is_directory(cmd)) {
+// 		{	// set exit_status as 126
+// 			return NULL;
+// 		}
+// 		} else if (!is_executable(cmd)) {
+// 			// set exit status as 126
+// 			return NULL;
+// 		} else {
+// 			return (ft_strdup(cmd));
+// 		}
+// 	}
+
+// 	while (mini->path_array[i])
+// 	{
+// 		whole = ft_strjoin(mini->path_array[i], cmd);
+// 		if (!whole)
+// 			return (NULL);
+// 		if (does_file_exist(whole)) {
+// 			if (is_directory(whole)) {
+// 				// set exit_status as 126
+// 				return NULL;
+// 				// return ?
+// 			} else if (!is_executable(whole)) {
+// 				// set exit status as 126
+// 				return NULL;
+// 			} else {
+// 				return (whole);
+// 			}
+// 		}
+// 		free(whole);
+// 		i++;
+// 	}
+// 	return (mini->exit_status = 127, NULL);
+// }

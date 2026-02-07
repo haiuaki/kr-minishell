@@ -1,4 +1,10 @@
-#include "minishell.h"
+// #include "minishell.h"
+#include "../execute/exec_run.h"
+//free((*env)[j]); 메인의 env 그대로 쓰면서 프리하는 UB라서 에러 가능
+// deep copy 해서 복사본만 수정하기
+// dup_env(envp) 깊은 복사 후 env_set(&mini->envm "PWD", value) 같은 형태로 PWD/OLDPWD업데이트 하라는데
+// 중요한 건 내가 할당하지 않은 메모리를 프리한는거란거
+// 내 메모리로 만들고 환경 변수 수정은 항상 mini->env 만 수정
 
 char *ft_cd_val_env(char *str, char ***env)
 {
