@@ -41,30 +41,33 @@ char	*get_token_type_state(t_state state)
 // On ajoute le token dans la structure t_token;
 void add_token(char *line, t_type_token type_token, int len, t_token **token)
 {
-    t_token *new_node;
-    t_token *tmp;
-		// char		temp_quote;
+	t_token *new_node;
+	t_token *tmp;
 
-		// temp_quote = 0;
-    new_node = malloc(sizeof(t_token));
-    if (!new_node)
-        return ;
-
-    new_node->str = ft_strndup(line, len);    
-    new_node->type_token = type_token;
-    new_node->type_quote = GENERAL;
-    new_node->type_bi = 0; // par defaut
-    new_node->next = NULL;
-
-    if (*token == NULL) // Si la liste est vide on met au debut
-        *token = new_node;
-    else
-    {
-        tmp = *token;
-        while (tmp->next)
-            tmp = tmp->next;
-        tmp->next = new_node;
-    }
+	if (!line || !token || len <= 0)
+		return ;
+	new_node = malloc(sizeof(t_token));
+	if (!new_node)
+		return ;
+	new_node->str = ft_strndup(line, len);
+	if (!new_node->str)
+	{
+		free(new_node);
+		return ;
+	}
+	new_node->type_token = type_token;
+	new_node->type_quote = GENERAL;
+	new_node->type_bi = 0; // par defaut
+	new_node->next = NULL;
+	if (*token == NULL) // Si la liste est vide on met au debut
+			*token = new_node;
+	else
+	{
+			tmp = *token;
+			while (tmp->next)
+					tmp = tmp->next;
+			tmp->next = new_node;
+	}
 }
 
 // compter le nombre de caracteres s'il y a pas de 2 quotes qui fonctionnent
@@ -562,10 +565,13 @@ int	*add_double_tab_int(int *tab, int val, int size)
 	if (!new_tab)
 			return (NULL);
 	j = 0;
-	while (j < size)
+	if (tab) // si tab n'est pas NULL, on copie les valeurs existantes
 	{
-			new_tab[j] = tab[j]; // copier chaque valeur
-			j++;
+		while (j < size)
+		{
+				new_tab[j] = tab[j]; // copier chaque valeur
+				j++;
+		}
 	}
 	new_tab[j] = val; // ajouter la nouvelle valeur (1 ou 0)
 	free(tab); // vu qu'on a bien cree un nouveau tableau agrandi, on libere l'ancien tableau
@@ -577,26 +583,33 @@ int	*add_double_tab_int(int *tab, int val, int size)
 // int  size : taille actuelle de double tableau
 char** add_double_tab_char(char **tab, char *str, int size)
 {
-    char **new_tab; // nouveau double tableau agrandi
-    int j; // index pour parcourir les tableaux
+	char **new_tab; // nouveau double tableau agrandi
+	int j; // index pour parcourir les tableaux
 
-    new_tab = malloc(sizeof(char *) * (size + 2)); // +1 pour le nouveau +1 pour NULL hihi
-    if (!new_tab)
-        return (NULL);
-    j = 0;
-    while (j < size)
-    {
-        new_tab[j] = tab[j]; // copier l'adresse de chaque chaine
-				// cf) on copie juste le pointeur (l'adresse)
-				// chaque tab[j] est un pointeur vers une chaine de caracteres
-        // cf) char **tab = *tab[] = {"pho", "malatang", NULL}; (tableau de pinteurs vers des chaines)
-				//     char tab[j] -> tab[0] = adresse de "pho", tab[1] = adresse de "malatang" (chaine de caracteres)
-				j++;
-    }
-    new_tab[j] = str; // l'adresse de nouvelle chaine ajoutee, on ajoute la nouvelle adresse ici youpiii
-    new_tab[j + 1] = NULL; // terminer par NULL
-    free(tab); // vu qu'on a bien cree un nouveau tableau agrandi, on libere l'ancien tableau de pointeurs
-    return (new_tab);
+	if (!tab && size > 0) // proteger au cas ou tab est NULL mais size > 0
+		return (NULL);
+	if (!str || size < 0) // proteger au cas ou str est NULL ou size < 0
+		return (NULL);
+	new_tab = malloc(sizeof(char *) * (size + 2)); // +1 pour le nouveau +1 pour NULL hihi
+	if (!new_tab)
+			return (NULL);
+	j = 0;
+	if (tab) // si tab n'est pas NULL, on copie les valeurs existantes
+	{
+		while (j < size)
+		{
+			new_tab[j] = tab[j]; // copier l'adresse de chaque chaine
+			// cf) on copie juste le pointeur (l'adresse)
+			// chaque tab[j] est un pointeur vers une chaine de caracteres
+			// cf) char **tab = *tab[] = {"pho", "malatang", NULL}; (tableau de pinteurs vers des chaines)
+			//     char tab[j] -> tab[0] = adresse de "pho", tab[1] = adresse de "malatang" (chaine de caracteres)
+			j++;
+		}
+	}
+	new_tab[j] = str; // l'adresse de nouvelle chaine ajoutee, on ajoute la nouvelle adresse ici youpiii
+	new_tab[j + 1] = NULL; // terminer par NULL
+	free(tab); // vu qu'on a bien cree un nouveau tableau agrandi, on libere l'ancien tableau de pointeurs
+	return (new_tab);
 }
 
 // parcourir les token, et rajouter les token dans les tableaux
@@ -955,7 +968,6 @@ char	*get_env_var(char *str, t_mini *mini)
 		j++;
 	}
 	return (ft_strdup("")); // si on ne trouve pas la variable d'env, on retourne une chaine vide
-	// penser a free apres **************
 }
 
 // ajouter un char c a la fin de la chaine resultat  
@@ -1029,6 +1041,8 @@ char	*remplacer_dollar(char *str, t_mini *mini)
 	int		d_quote;
 	char	*resultat; // le nouveau str qui remplace *str
 
+	if (!str || !mini)
+		return (NULL);
 	resultat = malloc(sizeof(char) * 1); // on initialise resultat avec 1 caractere (pour resultat[0]='\0')
 	if (!resultat)
 		return (NULL);
@@ -1119,7 +1133,7 @@ char	*enlever_quote_dans_token(char *str)
 	i = 0;
 	while (str[i])
 	{
-		if (str[i] == '\'' && !d_quote) // gerer le cas de single quote au debut
+		if (str[i] == '\'' && !d_quote) // gerer l'ouverture/fermeture de single quote  (on ne traite pas les quotes dans les double quotes)
 		{
 			s_quote = !s_quote; // on inverse l'etat de s_quote (0 -> 1 , 1 -> 0)
 			i++; // on saute le caractere quote
@@ -1886,7 +1900,7 @@ void	free_cmd_fd_tab(t_cmd *cmd)
 	cmd->infile = NULL;
 	free_tab_char(cmd->outfile);
 	cmd->outfile = NULL;
-	free_tab_char(cmd->temp_heredoc);
+	free_temp_heredoc(cmd->temp_heredoc); // supprimer tous les fichiers temporaires de heredoc (unlink), puis free le tableau temp_heredoc[]
 	cmd->temp_heredoc = NULL;
 	free_tab_char(cmd->limiter);
 	cmd->limiter = NULL;
@@ -1896,6 +1910,8 @@ void	free_cmd_fd_tab(t_cmd *cmd)
 	cmd->in_heredoc = NULL;
 	free_tab_int(cmd->in_hd_index);
 	cmd->in_hd_index = NULL;
+	free_tab_int(cmd->hd_env);
+	cmd->hd_env = NULL;
 }
 
 // free tous les cmd (fd, tableaux de string et d'int), puis free le tableau de cmd
@@ -1920,7 +1936,8 @@ void	free_mini(t_mini *mini)
 {
 	if (!mini)
 		return ;
-	free_cmd_all(mini->cmd, mini->nbr_cmd); // free tous les cmd (fd, tableaux de string et d'int), puis free le tableau de cmd
+	if (mini->cmd)
+		free_cmd_all(mini->cmd, mini->nbr_cmd); // free tous les cmd (fd, tableaux de string et d'int), puis free le tableau de cmd
 	free(mini); // free la structure mini apres avoir free tous les cmd
 }
 
@@ -1929,11 +1946,14 @@ int	main(int ac, char **av, char **env)
 {
 	(void)ac;
 	(void)av;
-	char	*line;
-	t_cmd	*cmd;
+	char		*line;
+	t_cmd		*cmd;
 	t_token	*parsing;
-	t_token	*temp;
-	int		i;
+	// t_token	*temp;
+	// int			i;
+	int			j;
+	int			resultat;
+	int			nbr_cmd;
 	t_mini	*mini;
 
 	mini = malloc(sizeof(t_mini));
@@ -1943,8 +1963,9 @@ int	main(int ac, char **av, char **env)
 	mini->exit_status = 0;
 	mini->cmd = NULL;
 	mini->nbr_cmd = 0;
-	i = 0;
+	// i = 0;
 	cmd = NULL;
+	j = 0;
 	while (1)
 	{
 		init_signaux();
@@ -1964,57 +1985,91 @@ int	main(int ac, char **av, char **env)
 		add_history(line);
 
 		parsing = NULL;
-		i = 0;
+		// i = 0;
 		if (check_quotes(line) == 0)
 		{
-			printf("Error: unclosed quotes\n");
+			write(2, "Error: unclosed quotes\n", 23);
 			free(line);
 			continue ;
 		}
-		// printf("Quotes are properly closed.\n");
 		if (check_pipe_fin(line) == 1)
 		{
-			printf("Error: syntax error near unexpected token '|'\n");
+			write(2, "Error: syntax error near unexpected token '|'\n", 47);
 			free(line);
 			continue ;
 		}
-		parse_input(line, &parsing, mini);
-		
-		temp = parsing;
-		while (temp)
-		{
-			printf("testing tokens:\n");
-			printf("noeud %d '%s' | type %s | type_quote %s\n", i, temp->str, get_token_type_str(temp->type_token), get_token_type_state(temp->type_quote));
-			i++;
-			temp = temp->next;
-		}
-		cmd = malloc_cmd(parsing);
-		int result = add_cmd(parsing, cmd);
-		if (result == -1)
-			return (-1);
-		else if (result == -2)
-		{
-			continue ;
-		}
-		mini->cmd = cmd;
-		mini->nbr_cmd = count_pipe(parsing) + 1;
-
-		test_print_cmds(cmd, count_pipe(parsing) + 1);
-		test_redirs(mini);
 		if (parse_input(line, &parsing, mini) < 0)
 		{
-			printf("Error: parse_input failed\n");
+			write(2, "Error: parse_input failed\n", 26);
 			free_tokens(&parsing);
 			free(line);
 			continue ;
 		}
-		// free cmd a gerer ******************************
-		if (cmd)
-			free(cmd); // il faut ameliorer apres *************************
+		
+		// temp = parsing;
+		// while (temp)
+		// {
+		// 	printf("testing tokens:\n");
+		// 	printf("noeud %d '%s' | type %s | type_quote %s\n", i, temp->str, get_token_type_str(temp->type_token), get_token_type_state(temp->type_quote));
+		// 	i++;
+		// 	temp = temp->next;
+		// }
+		cmd = malloc_cmd(parsing);
+		if (!cmd)
+		{
+			free_tokens(&parsing);
+			free(line);
+			continue ;
+		}
+		nbr_cmd = count_pipe(parsing) + 1;
+		resultat = add_cmd(parsing, cmd);
+		if (resultat == -1)
+		{
+			free_cmd_all(cmd, nbr_cmd);
+			free_tokens(&parsing);
+			free(line);
+			continue ;
+		}
+		else if (resultat == -2)
+		{
+			free_cmd_all(cmd, nbr_cmd);
+			free_tokens(&parsing);
+			free(line);
+			continue ;
+		}
+		mini->cmd = cmd;
+		mini->nbr_cmd = nbr_cmd;
+		j = 0;
+		while (j < mini->nbr_cmd)
+		{
+			if (appliquer_heredoc_cmd(mini, j) < 0)
+			{
+				break ;
+			}
+			j++;
+		}
+		if (j < mini->nbr_cmd)
+		{
+			free_cmd_all(mini->cmd, mini->nbr_cmd);
+			mini->cmd = NULL;
+			mini->nbr_cmd = 0;
+			free_tokens(&parsing);
+			free_mini(mini);
+			continue ;
+		}
+
+		test_print_cmds(cmd, nbr_cmd);
+		test_redirs(mini);
+
+		if (mini->cmd)
+			free_cmd_all(mini->cmd, mini->nbr_cmd);
 		mini->cmd = NULL;
 		mini->nbr_cmd = 0;
-		free_tokens(&parsing);
-		free(line);
+		if (parsing)
+			free_tokens(&parsing);
+		if (line)
+			free(line);
 	}
+	free_mini(mini);
 	return (0);
 }
