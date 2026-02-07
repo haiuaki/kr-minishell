@@ -52,6 +52,13 @@ void	set_path_array(t_mini *mini);
 char	*cmd_path_center(t_mini *mini, char *cmd);
 
 // error_utils.c
-void	msg_error(t_mini *mini, char *err);
+void	fatal_error(t_mini *mini, char *err);
+
+// file_utils.c
+int	is_directory(char *file_path);
+int	is_executable(char *file_path);
+int	does_file_exist(char *file_path);
+
+void	ft_close(t_mini* mini, int *fd);
 
 #endif

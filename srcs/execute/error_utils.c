@@ -10,8 +10,11 @@
 // 	return (1);
 // }
 
-void	msg_error(t_mini *mini, char *err)
+void	fatal_error(t_mini *mini, char *err)
 {
+	// 1. clean mini structure
+	// 2. exit minishell
+
 	// cleanup_all(mini);
 	(void)mini;
 	if (err)
@@ -20,11 +23,11 @@ void	msg_error(t_mini *mini, char *err)
 		perror("Error");
 	exit(EXIT_FAILURE);
 }
-void	exec_exit(char *name, int exit_status)
-{
-	if (name && *name)
-		perror(name);
-	else
-		perror("minishell");
-	exit (exit_status);
-}
+// void	exec_exit(char *name, int exit_status)
+// {
+// 	if (name && *name)
+// 		perror(name);
+// 	else
+// 		perror("minishell");
+// 	exit (exit_status);
+// }

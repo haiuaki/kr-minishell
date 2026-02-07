@@ -23,6 +23,7 @@ SRCS =  main_execute.c \
 		process_manager.c \
 		error_utils.c \
 		path_utils.c \
+		file_utils.c \
 		hardcode.c 
 # ════════════════════════════════════════════════════════════════════════════ #
 #                                OBJECT FILES                                  #

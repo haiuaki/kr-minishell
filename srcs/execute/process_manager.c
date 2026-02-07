@@ -104,11 +104,11 @@ void  fork_center(t_mini *mini)
 	{
 		check = pipe(pipe_fd);
 		if (check == -1)
-			msg_error(mini, "pipe_error");
+			fatal_error(mini, "pipe_error");
 	}
     child_id = fork();
 	if (child_id < 0)
-		msg_error(mini, "fork_error");
+		fatal_error(mini, "fork_error");
     else if (child_id == 0)
       child_center(mini, mini->cmd_array[i], pipe_fd, i);
 	else
