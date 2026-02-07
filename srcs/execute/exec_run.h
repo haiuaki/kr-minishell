@@ -2,12 +2,13 @@
 #define EXEC_RUN_H
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/wait.h>
-
+#include <fcntl.h>
 
 typedef struct s_cmd
 {
