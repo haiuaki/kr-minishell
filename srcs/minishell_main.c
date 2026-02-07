@@ -1479,6 +1479,8 @@ int	check_quote_limiter(char *limiter)
 // verifier soit on applique l'expansion de l'env ou non par rapport a limiter
 int	check_heredoc_env(char *limiter)
 {
+	if (!limiter)
+		return (0);
 	if (!check_quote_limiter(limiter))
 		return (1); // 1 s'il y a pas de quote dans limiter (on applique l'expansion de l'env)
 	return (0); // 0 sinon (on n'applique pas l'expansion de l'env, on les lit comme un caractere)
@@ -1523,8 +1525,9 @@ void	appliquer_heredoc_enfant(t_mini *mini, int j, int n)
 	}
 	if (resultat < 0) // erreur dans collecter_heredoc_lines
 	{
-		perror("collecter heredoc");
+		perror("collecter heredoc: mini->cmd[j].temp_heredoc[n]");
 		close(fd_temp);
+		unlink(mini->cmd[j].temp_heredoc[n]);
 		exit (1);
 	}
 	close(fd_temp); //fermer le fd temp dans l'enfant pour eviter les leak
@@ -1579,6 +1582,8 @@ int	appliquer_heredoc_cmd(t_mini *mini, int j)
 		{
 			mini->cmd[j].in_fail = 1;
 			mini->exit_status = 1;
+			free_temp_heredoc(mini->cmd[j].temp_heredoc);
+			mini->cmd[j].temp_heredoc = NULL;
 			init_signaux(); // reinitialiser les signaux avant de retourner
 			return (-1);
 		}
@@ -1587,6 +1592,8 @@ int	appliquer_heredoc_cmd(t_mini *mini, int j)
 		{
 			mini->cmd[j].in_fail = 1;
 			mini->exit_status = 1;
+			free_temp_heredoc(mini->cmd[j].temp_heredoc);
+			mini->cmd[j].temp_heredoc = NULL;
 			init_signaux();
 			return (-1); // si echec de waitpid
 		}
@@ -1597,6 +1604,8 @@ int	appliquer_heredoc_cmd(t_mini *mini, int j)
 			init_signaux();
 			mini->cmd[j].in_fail = 1;
 			mini->exit_status = 1;
+			free_temp_heredoc(mini->cmd[j].temp_heredoc);
+			mini->cmd[j].temp_heredoc = NULL;
 			return (-1); // si echec de waitpid
 		}
 		// init_signaux(); // apres la fin du processus enfant, on applique des signaux pareils que shell
@@ -1605,6 +1614,8 @@ int	appliquer_heredoc_cmd(t_mini *mini, int j)
 			exit_signal = WTERMSIG(status);
 			mini->cmd[j].in_fail = 1;
 			mini->exit_status = 128 + exit_signal;
+			free_temp_heredoc(mini->cmd[j].temp_heredoc);
+			mini->cmd[j].temp_heredoc = NULL;
 			init_signaux();
 			return (-1);
 		}
@@ -1630,6 +1641,8 @@ int	appliquer_heredoc_cmd(t_mini *mini, int j)
 		{
 			mini->cmd[j].in_fail = 1;
 			mini->exit_status = 1;
+			free_temp_heredoc(mini->cmd[j].temp_heredoc);
+			mini->cmd[j].temp_heredoc = NULL;
 			init_signaux(); // reinitialiser les signaux avant de retourner
 			return (-1);
 		}
@@ -1642,6 +1655,10 @@ int	appliquer_heredoc_cmd(t_mini *mini, int j)
 	{
 		mini->cmd[j].in_fail = 1;
 		mini->exit_status = 1;
+		close(mini->cmd[j].fd_in);
+		mini->cmd[j].fd_in = -1;
+		free_temp_heredoc(mini->cmd[j].temp_heredoc);
+		mini->cmd[j].temp_heredoc = NULL;
 		perror("open temp for reading"); // afficher l'erreur
 		init_signaux(); // reinitialiser les signaux avant de retourner
 		return (-1);
