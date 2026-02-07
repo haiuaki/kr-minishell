@@ -1407,9 +1407,9 @@ int	collecter_heredoc_lines(int fd, t_mini *mini, int j, int n)
 	char	*line;
 	char	*line_applique;
 
-	if (!mini || !mini->cmd
+	if (fd < 0 || !mini || !mini->cmd
 		|| j < 0 || j >= mini->nbr_cmd || !mini->cmd[j].limiter
-		|| n < 0 || n >= mini->cmd[j].compter_heredoc || !mini->cmd[j].hd_env)
+		|| n < 0 || n >= mini->cmd[j].compter_heredoc)
 		return (-1);
 	if (!mini->cmd[j].limiter[n])
 		return (1);
@@ -1424,25 +1424,23 @@ int	collecter_heredoc_lines(int fd, t_mini *mini, int j, int n)
 			free(line); // liberer readline
 			return (0); // quitte la boucle (et cette fonction)
 		}
-
 		line_applique = line;
-		if (mini->cmd[j].hd_env[n])
+		if (mini->cmd[j].hd_env && mini->cmd[j].hd_env[n])
 		{
 			line_applique = remplacer_dollar(line, mini);
 			if (!line_applique)
 				return (free(line), -1);
 		}
-
 		if (write(fd, line_applique, ft_strlen(line_applique)) == -1 || write(fd, "\n", 1) == -1) // ecrire la ligne dans le fichier temp (le resultat de line + '\n')
 		// le resultat de readline n'applique pas automatiquement '\n', on en ajoute a la fin
 		// si write retourne -1, c'est une erreur d'ecriture, on libere readline et on retourne -1
 		{
-			if (mini->cmd[j].hd_env[n])
+			if (mini->cmd[j].hd_env && mini->cmd[j].hd_env[n])
 				free(line_applique);
 			free(line);
 			return (-1); // si echec d'ecriture
 		}
-		if (mini->cmd[j].hd_env[n])
+		if (mini->cmd[j].hd_env && mini->cmd[j].hd_env[n])
 			free(line_applique);
 		free(line); // free readline avant de quitter la fonction hihi
 	}
