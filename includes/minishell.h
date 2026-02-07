@@ -97,7 +97,7 @@ typedef struct s_cmd
 }	t_cmd;
 
 // structure du contexte global minishell 
-// ex) env et exit status (dernier code de sortie)
+// ex. env et exit status (dernier code de sortie)
 typedef struct s_mini
 {
 	char	**env;
@@ -108,15 +108,11 @@ typedef struct s_mini
 
 
 
-
-void	parse_builtin(char *line);
-
 // ======================================================= token =======================================================
 
-// parsing
+// token.c
 int 	add_token(char *line, t_type_token type_token, int len, t_token **token); // ajouter des token dans la structure
 int		parse_input(char *line, t_token **token, t_mini *mini); // mettre des token a chaque noeud (mot, redir, pipe) 
-char	**split_input_par_pipe(char *line); // decouper des commandes par pipe
 void 	parse_fd_tokens(t_token **token); // pour la condition de token MOT (redir, fd)
 
 // tester
@@ -167,7 +163,6 @@ t_cmd	*malloc_cmd(t_token *token); // alluer la liste chainee cmd (divisee par p
 char	**add_double_tab_char(char **tab, char *str, int size); // agrandir un tableau et rajouter une chaine
 int		*add_double_tab_int(int *tab, int val, int size); // agrandir un tableau int et rajouter une valeur int
 int 	add_cmd(t_token *token, t_cmd *cmd); // parcours les token, et rajoute les token dans les tableaux
-int		decouper_cmd_par_pipe(t_token *token, t_cmd **cmd);
 
 // ====================================================================================================================
 
