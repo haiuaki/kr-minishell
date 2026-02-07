@@ -42,7 +42,12 @@ typedef struct s_mini
 
 
 
+void  fork_center(t_mini *mini);
+void	ft_execute(t_mini *mini, t_cmd *cmd);
 
 t_mini *build_echo_cat_wc(void);
+
+// error_utils.c
+void	msg_error(t_mini *mini, char *err);
 
 #endif

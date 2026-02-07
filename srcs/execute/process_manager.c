@@ -5,16 +5,16 @@ void	child_center(t_mini *mini, t_cmd cmd, int *pipe_fd, int i)
 	printf("cmd.cmd[0] : %s\n", cmd.cmd[0]);
 	// g_exit_status = 0;
 	// signal_setting_commandmode();
-	if (mini->cmd_array[i].in_fail || mini->cmd_array[i].out_fail)
- 	{
-		if (pipe_fd[0] >= 0)
-			close(pipe_fd[0]);
-		if (pipe_fd[1] >= 0)
-			close(pipe_fd[1]);
-		if (mini->pipe_read_end >= 0)
-			close(mini->pipe_read_end);
-		exit(mini->exit_status ? mini->exit_status : 1);
-  	}
+	// if (mini->cmd_array[i].in_fail || mini->cmd_array[i].out_fail)
+ 	// {
+	// 	if (pipe_fd[0] >= 0)
+	// 		close(pipe_fd[0]);
+	// 	if (pipe_fd[1] >= 0)
+	// 		close(pipe_fd[1]);
+	// 	if (mini->pipe_read_end >= 0)
+	// 		close(mini->pipe_read_end);
+	// 	exit(mini->exit_status ? mini->exit_status : 1);
+  	// }
 	if (mini->nbr_cmd > 1)
 	{
 		if (i == 0)
@@ -42,19 +42,19 @@ void	child_center(t_mini *mini, t_cmd cmd, int *pipe_fd, int i)
 			close(mini->pipe_read_end);
 		}
 	}
-	if (mini->cmd_array[i].fd_in != -1)
-	{
-		dup2(mini->cmd_array[i].fd_in, STDIN_FILENO);
-		close(mini->cmd_array[i].fd_in);
-	}
-	if (mini->cmd_array[i].fd_out != -1)
-	{
-		dup2(mini->cmd_array[i].fd_out, STDOUT_FILENO);
-		close(mini->cmd_array[i].fd_out);
-	}
+	// if (mini->cmd_array[i].fd_in != -1)
+	// {
+	// 	dup2(mini->cmd_array[i].fd_in, STDIN_FILENO);
+	// 	close(mini->cmd_array[i].fd_in);
+	// }
+	// if (mini->cmd_array[i].fd_out != -1)
+	// {
+	// 	dup2(mini->cmd_array[i].fd_out, STDOUT_FILENO);
+	// 	close(mini->cmd_array[i].fd_out);
+	// }
 	// 	g_exit_status = 1;
 	// if (g_exit_status == 0)
-		ft_execute(mini, mini->cmd_array[i].cmd);
+	ft_execute(mini, &mini->cmd_array[i]);
 	// exit(g_exit_status);
 	if (pipe_fd[0] >= 0)
 		close(pipe_fd[0]);
@@ -109,9 +109,10 @@ void  fork_center(t_mini *mini)
     child_id = fork();
 	if (child_id < 0)
 		msg_error(mini, "fork_error");
-    if (child_id == 0)
+    else if (child_id == 0)
       child_center(mini, mini->cmd_array[i], pipe_fd, i);
-    parent_center(mini, pipe_fd, i);
+	else
+      parent_center(mini, pipe_fd, i);
 	i++;
   }
  // waitpid 로 엑싯 스테이터스 마지막 커맨드 받기로 바꾸기

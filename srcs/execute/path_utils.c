@@ -60,10 +60,19 @@ void	get_cmd_paths(t_mini *mini)
 // !!!! cmd->cmd[0] 에 / 가 들어있을 경우 PATH 탐색 없이 그 경로로 바로 검사
 
 char	*cmd_path_center(t_mini *mini, t_cmd *cmd)
+// return value: 올바른 실행 경로
 {
 	int	i;
 	char *path;
 	char	*whole;
+	// 빌트인이면 널을 리턴한다
+	// / 있는데 파일 없으면 127
+	// / 있는데 access 못하면 126
+	// / 있는데 위 2 경우 아니면 복사해서 리턴
+	
+	// / 없으면 cmd_paths 없으면 127
+	// / 없으면 쭉 붙여서 리렉토리인지 커미션 있는지 확인 
+
 
 	i = 0;
 	if (!mini || !cmd || !cmd->cmd || !cmd->cmd[0] || !*cmd->cmd[0])
